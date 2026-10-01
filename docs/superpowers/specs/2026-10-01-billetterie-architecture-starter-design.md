@@ -78,7 +78,7 @@ Le paiement est un simulateur local dans l'application. Ses modes `success`, `fa
 
 ## Ateliers rendus possibles par le socle
 
-1. **Architecture initiale** : repérer les responsabilités, documenter le flux et écrire les invariants.
+1. **Découpage fonctionnel avant extraction** : repérer les capacités et les invariants, produire deux découpages concurrents, attribuer décisions et données à des propriétaires, puis éprouver les frontières avec des cartes de changement, de panne et de charge. Le matériel d'atelier comprend un canevas de matrice d'ownership et d'ADR ; il ne fournit pas le découpage retenu.
 2. **Concurrence** : reproduire une surréservation et protéger l'invariant à l'endroit qui fait autorité. Comparer au moins deux corrections possibles.
 3. **Frontières internes** : ajouter une règle métier, identifier le coût du changement, puis refactoriser le seul parcours de réservation qui le justifie.
 4. **Charge en lecture** : mesurer la consultation de disponibilité et comparer lecture directe, cache ou projection. Une valeur affichée peut être légèrement en retard ; la décision de réservation reste autoritaire.
@@ -99,7 +99,7 @@ Chaque atelier demande un résultat exécutable, une mesure ou un test, puis une
 
 - `README.md` : objectif pédagogique, prérequis Docker, démarrage et parcours de démonstration.
 - `docs/architecture-initiale.md` : état initial, responsabilités et limites connues, sans solution aux ateliers.
-- `docs/ateliers/` : consignes progressives et preuves attendues.
+- `docs/ateliers/` : consignes progressives, cartes métier pour l'atelier de découpage fonctionnel, canevas d'ownership et preuves attendues.
 - `docs/adr-template.md` : contexte, critères, options, décision, conséquences et vérification.
 - `docs/usage-ia.md` : trace courte des usages significatifs de l'IA, avec décision et vérification humaine.
 
