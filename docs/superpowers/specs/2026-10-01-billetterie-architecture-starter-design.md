@@ -12,6 +12,12 @@ Une billetterie vend des places en placement libre pour quelques événements fi
 
 L'interface web est volontairement simple et servie par l'application. Elle présente les événements, déclenche la réservation et la confirmation, puis affiche un état explicite. Elle ne demande aucune donnée personnelle réelle : un identifiant client fictif suffit.
 
+### Paiement simulé dans le socle
+
+Le paiement fait partie du parcours livré, pas seulement d'un exercice futur. Après la réservation, le visiteur déclenche le checkout depuis l'interface. Le simulateur enregistre une tentative de paiement et produit un résultat `SUCCEEDED`, `FAILED` ou `PENDING` selon le scénario activé. La réservation devient `CONFIRMED` après un succès et `FAILED` après un refus certain. Si la réponse tarde ou se perd, elle reste dans un état explicite consultable ; le système ne transforme pas un timeout en refus supposé. Aucun argent réel, compte marchand ni prestataire externe n'est utilisé.
+
+Le scénario nominal permet de réserver et de payer jusqu'au bout dès le premier lancement Docker. Le simulateur expose aussi refus et lenteur. Les étudiants complètent la gestion des tentatives répétées, des résultats incertains et de la reprise, puis font évoluer cette capacité vers un service indépendant. Une tentative répétée ne doit finalement pas créer un second paiement accepté pour la même réservation ; cette garantie est un objectif d'atelier, pas une propriété prétendue du socle initial.
+
 ### États et règles métier
 
 - Un événement possède une capacité finie.
@@ -42,18 +48,25 @@ Les réponses d'erreur distinguent entrée invalide, événement absent, vente c
 - Structure initiale lisible en routes, services et repositories. Le parcours de réservation pourra être refactorisé pendant le cours sans réécrire toute l'application.
 - Interface HTML/CSS/JavaScript légère servie par l'application. Aucun framework frontal n'est nécessaire pour les ateliers d'architecture backend.
 - Données d'exemple et migrations versionnées.
-- Aucun broker dans le démarrage initial. L'extraction d'un traitement différé et le choix de son mécanisme restent du travail étudiant.
+- Aucun broker dans le démarrage initial. Le paiement simulé est d'abord un module du monolithe ; son extraction et le choix d'un contrat interservices restent du travail étudiant.
 
 Le parcours nominal fonctionne dès le départ. Le contrôle initial de capacité est volontairement insuffisant sous concurrence : deux demandes peuvent lire la même disponibilité avant d'enregistrer leurs réservations. Cette limite est nommée dans le sujet, démontrée par un scénario de test séparé et corrigée par les étudiants. Le dépôt ne prétend pas être un modèle de production.
 
 ## Trajectoire de migration étudiée
 
-1. **Monolithe initial** : observer le flux de réservation, le coût du changement et la charge avant de créer une frontière réseau.
-2. **Frontières internes** : clarifier catalogue, réservation et paiement dans le code, sans multiplier encore les déploiements. Protéger localement l'invariant de capacité.
-3. **Premier service extrait** : les étudiants développent une notification différée, déployable séparément via Docker Compose. Elle possède son état de traitement et consomme un contrat explicite. Ils choisissent et éprouvent le mécanisme de livraison, le traitement des doublons et la reprise après panne.
-4. **Décision d'évolution** : à partir des mesures de lecture, comparer l'amélioration du monolithe à l'extraction d'une capacité de consultation. Une extraction supplémentaire demande une justification ; elle n'est pas nécessaire pour terminer le socle.
+1. **Monolithe initial** : exécuter le parcours complet consultation → réservation → paiement simulé, puis observer son flux, le coût du changement et la charge avant de créer une frontière réseau.
+2. **Frontières internes** : clarifier catalogue, réservation et paiement dans le code, sans multiplier encore les déploiements. Protéger localement l'invariant de capacité et rendre explicite l'état après un paiement lent ou refusé.
+3. **Premier service extrait** : les étudiants extraient le paiement simulé en service déployable séparément via Docker Compose. Le service de paiement possède ses tentatives et leur état ; le service de réservation garde la réservation et la capacité. Les étudiants définissent le contrat entre les deux, puis traitent timeout, tentative répétée et résultat incertain.
+4. **Décision d'évolution** : à partir des mesures de lecture, comparer l'amélioration du monolithe à l'extraction d'une capacité de consultation. Une notification différée peut servir d'extension pour étudier publication, duplication et reprise de messages ; elle n'est pas nécessaire pour terminer le parcours principal.
 
 La capacité de l'événement et la décision de réservation restent sous la même autorité transactionnelle. Les séparer uniquement pour augmenter le nombre de services introduirait une coordination distribuée autour de l'invariant central. La migration rend visibles les coûts nouveaux : latence réseau, contrats, cohérence, observabilité, déploiement et exploitation.
+
+| Fourni dans le dépôt de départ | À implémenter pendant le cours |
+| --- | --- |
+| Catalogue, réservation et checkout nominal dans un monolithe Docker. | Protection de la capacité en concurrence et justification de la correction. |
+| Simulateur de paiement avec succès, refus et lenteur reproductibles. | Politique face aux tentatives répétées, aux timeouts et aux résultats incertains. |
+| Tests ordinaires, scénarios de défi et outil de mesure. | Tests des nouvelles garanties et interprétation des mesures. |
+| Structure en couches et documentation initiale. | Frontières internes, extraction du paiement et ADR de migration. |
 
 ## Exécution intégralement conteneurisée
 
@@ -70,13 +83,13 @@ Le paiement est un simulateur local dans l'application. Ses modes `success`, `fa
 3. **Frontières internes** : ajouter une règle métier, identifier le coût du changement, puis refactoriser le seul parcours de réservation qui le justifie.
 4. **Charge en lecture** : mesurer la consultation de disponibilité et comparer lecture directe, cache ou projection. Une valeur affichée peut être légèrement en retard ; la décision de réservation reste autoritaire.
 5. **Défaillances** : injecter lenteur et échec du paiement, puis défendre timeout, reprise et état visible au client.
-6. **Évolution distribuée** : extraire une notification différée en second conteneur applicatif. Choisir le contrat, le propriétaire des données et la stratégie face à un message répété ou perdu. L'outbox et l'idempotence sont des solutions possibles à étudier, pas des éléments déjà implémentés dans le socle.
+6. **Évolution distribuée** : extraire le paiement en second conteneur applicatif avec sa propre persistance. Choisir le contrat, les états partagés et la stratégie face à un appel répété, tardif ou perdu. L'idempotence, la réconciliation et, dans une extension asynchrone, l'outbox sont des solutions possibles à étudier, pas des éléments déjà implémentés dans le socle.
 
 Chaque atelier demande un résultat exécutable, une mesure ou un test, puis une justification courte. Les consignes séparent les faits imposés des décisions laissées aux étudiants.
 
 ## Vérification du socle
 
-- Les tests ordinaires valident le parcours nominal, les transitions d'état et les erreurs prévues.
+- Les tests ordinaires valident le parcours nominal jusqu'au paiement simulé, les transitions d'état et les erreurs prévues.
 - Un scénario de concurrence contrôlé met en évidence la limite initiale sans dépendre d'une course aléatoire. Il reste séparé de la vérification de démarrage afin que le socle livré ait des tests ordinaires verts.
 - Le générateur de charge restitue au minimum nombre de requêtes, débit, erreurs et latence médiane et au 95e percentile. Les résultats servent de point de comparaison ; aucun seuil universel n'est inventé.
 - La documentation explique les limites de mesure locale et les moyens de remettre la base dans un état comparable avant chaque expérience.
