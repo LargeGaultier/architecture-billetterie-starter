@@ -4,7 +4,7 @@
 
 Créer un dépôt public `LargeGaultier/architecture-billetterie-starter` pour le cours « Architecture et choix technologiques ». Le dépôt fournit une application de départ exécutable et des expériences reproductibles. Les étudiants partent d'un cas métier qui fonctionne, observent ses limites, puis décident et implémentent des évolutions d'architecture. Le dépôt ne contient pas la correction des ateliers.
 
-Le cours part d'un monolithe structuré en couches avant d'étudier les frontières de services. Le nombre de microservices n'est pas une cible. Le résultat attendu est la capacité à justifier les frontières, les garanties métier et les mécanismes de scalabilité à partir de preuves.
+Le cours part d'un monolithe structuré en couches avant d'étudier les frontières de services. Le TP d'extraction impose trois services métier comme contrainte pédagogique, sans indiquer leurs noms ni leurs responsabilités. Le résultat attendu est la capacité à justifier les frontières, les garanties métier et les mécanismes de scalabilité à partir de preuves. L'ordre N-Layer, Clean, CQRS, vertical slices, microservices n'est pas une échelle de qualité.
 
 ## Parcours métier livré
 
@@ -16,7 +16,7 @@ L'interface web est volontairement simple et servie par l'application. Elle pré
 
 Le paiement fait partie du parcours livré, pas seulement d'un exercice futur. Après la réservation, le visiteur déclenche le checkout depuis l'interface. Le simulateur enregistre une tentative de paiement et produit un résultat `SUCCEEDED`, `FAILED` ou `PENDING` selon le scénario activé. La réservation devient `CONFIRMED` après un succès et `FAILED` après un refus certain. Si la réponse tarde ou se perd, elle reste dans un état explicite consultable ; le système ne transforme pas un timeout en refus supposé. Aucun argent réel, compte marchand ni prestataire externe n'est utilisé.
 
-Le scénario nominal permet de réserver et de payer jusqu'au bout dès le premier lancement Docker. Le simulateur expose aussi refus et lenteur. Les étudiants complètent la gestion des tentatives répétées, des résultats incertains et de la reprise, puis font évoluer cette capacité vers un service indépendant. Une tentative répétée ne doit finalement pas créer un second paiement accepté pour la même réservation ; cette garantie est un objectif d'atelier, pas une propriété prétendue du socle initial.
+Le scénario nominal permet de réserver et de payer jusqu'au bout dès le premier lancement Docker. Le simulateur expose aussi refus et lenteur. Les étudiants complètent la gestion des tentatives répétées, des résultats incertains et de la reprise, puis décident comment répartir cette capacité lors de l'extraction. Une tentative répétée ne doit finalement pas créer un second paiement accepté pour la même réservation ; cette garantie est un objectif d'atelier, pas une propriété prétendue du socle initial.
 
 ### États et règles métier
 
@@ -48,25 +48,26 @@ Les réponses d'erreur distinguent entrée invalide, événement absent, vente c
 - Structure initiale N-Layer lisible en routes, services et repositories. Une classe métier centrale, par exemple `TicketingService`, fait fonctionner consultation, réservation et orchestration du checkout. Elle accumule volontairement plusieurs responsabilités de Catalogue, Réservation et Paiement, et dépend de repositories concrets et du simulateur. Le parcours est crédible et exécutable, mais une nouvelle règle traverse ce point de passage ; les étudiants pourront le constater puis refactoriser une tranche sans réécrire toute l'application.
 - Interface HTML/CSS/JavaScript légère servie par l'application. Aucun framework frontal n'est nécessaire pour les ateliers d'architecture backend.
 - Données d'exemple et migrations versionnées.
-- Aucun broker dans le démarrage initial. Le paiement simulé est d'abord un module du monolithe ; son extraction et le choix d'un contrat interservices restent du travail étudiant.
+- Aucun broker dans le démarrage initial. Le paiement simulé est d'abord un module du monolithe ; les frontières et les contrats interservices restent du travail étudiant.
 
 Le parcours nominal fonctionne dès le départ. Les défauts pédagogiques restent ciblés et observables : concentration des responsabilités dans la classe métier centrale, couplage aux détails techniques et contrôle de capacité insuffisant sous concurrence. Deux demandes peuvent lire la même disponibilité avant d'enregistrer leurs réservations ; cette limite est nommée dans le sujet, démontrée par un scénario de test séparé et corrigée par les étudiants. Les comportements ordinaires ont des tests verts pour permettre un refactoring sûr. Le dépôt ne prétend pas être un modèle de production.
 
 ## Trajectoire de migration étudiée
 
 1. **Monolithe initial** : exécuter le parcours complet consultation → réservation → paiement simulé. Identifier les parcours et domaines métier sans partir des dossiers, puis confronter cette carte à la classe métier centrale, au coût du changement et à la charge avant de créer une frontière réseau.
-2. **Frontières internes** : identifier d'abord les parcours de bout en bout qui formeraient des vertical slices, puis faire évoluer une tranche du N-Layer vers un cas d'usage Clean et des commandes/requêtes CQRS sur la même base. Regrouper ensuite le code par capacité dans le monolithe, sans multiplier les déploiements. Protéger localement l'invariant de capacité et rendre explicite l'état après un paiement lent ou refusé.
-3. **Premier service extrait** : à partir du module Paiement identifié dans le monolithe, les étudiants extraient le paiement simulé en service déployable séparément via Docker Compose. Le service de paiement possède ses tentatives et leur état ; le service de réservation garde la réservation et la capacité. Les étudiants définissent le contrat entre les deux, puis traitent timeout, tentative répétée et résultat incertain.
-4. **Décision d'évolution** : à partir des mesures de lecture, comparer l'amélioration du monolithe à l'extraction d'une capacité de consultation. Une notification différée peut servir d'extension pour étudier publication, duplication et reprise de messages ; elle n'est pas nécessaire pour terminer le parcours principal.
+2. **Refactorisations internes** : améliorer d'abord le N-Layer existant, isoler une décision avec Clean Architecture, introduire des chemins commande/requête CQRS sur la même base, puis regrouper le code par capacités dans des vertical slices. Chaque transformation est jugée par son bénéfice et son coût.
+3. **Découpage et extraction** : reprendre les cartes d'objets métier et les frontières éprouvées dans le monolithe. Comparer deux découpages à trois services, choisir la propriété des décisions et des données, les contrats et les stockages, puis extraire les trois processus. Les choix sont consignés dans deux ADR et des schémas C4. Le dépôt initial ne donne pas les noms ou les frontières à retenir.
+4. **Problèmes du distribué** : après l'extraction, reproduire la concurrence de la dernière place, tracer les transactions locales, puis traiter les réponses perdues, doublons et pannes partielles. Les étudiants choisissent et prouvent les mécanismes de correction.
+5. **Scalabilité et documentation finale** : mesurer un pic de consultation, comparer index, cache, projection ou montée en charge ciblée, puis rédiger un ADR de scalabilité et le DAT du système livré.
 
-La capacité de l'événement et la décision de réservation restent sous la même autorité transactionnelle. Les séparer uniquement pour augmenter le nombre de services introduirait une coordination distribuée autour de l'invariant central. La migration rend visibles les coûts nouveaux : latence réseau, contrats, cohérence, observabilité, déploiement et exploitation.
+Le socle initial rend visibles les décisions et l'état autoritaire sans prescrire leur future répartition. Une séparation qui place un invariant critique entre plusieurs autorités impose de la coordination ; les étudiants doivent pouvoir réviser leur frontière. La migration rend visibles les coûts nouveaux : latence réseau, contrats, cohérence, observabilité, déploiement et exploitation.
 
 | Fourni dans le dépôt de départ | À implémenter pendant le cours |
 | --- | --- |
 | Catalogue, réservation et checkout nominal dans un monolithe Docker. | Protection de la capacité en concurrence et justification de la correction. |
 | Simulateur de paiement avec succès, refus et lenteur reproductibles. | Politique face aux tentatives répétées, aux timeouts et aux résultats incertains. |
 | Tests ordinaires, scénarios de défi et outil de mesure. | Tests des nouvelles garanties et interprétation des mesures. |
-| Structure en couches et documentation initiale. | Frontières internes, extraction du paiement et ADR de migration. |
+| Structure en couches et documentation initiale. | Frontières internes, trois services définis par les groupes, ADR et C4. |
 
 ## Exécution intégralement conteneurisée
 
@@ -83,7 +84,7 @@ Le paiement est un simulateur local dans l'application. Ses modes `success`, `fa
 3. **Architecture du code** : ajouter une règle métier à la classe centrale du N-Layer et observer les responsabilités et dépendances touchées ; extraire un cas d'usage de réservation avec domaine et ports/adaptateurs ; implémenter des chemins commande/requête CQRS sur la même base ; ranger ces cas d'usage dans les slices proposées lors du découpage fonctionnel. La nécessité d'une projection de lecture distincte sera réévaluée après les mesures de charge.
 4. **Charge en lecture** : mesurer la consultation de disponibilité et comparer lecture directe, cache ou projection. Une valeur affichée peut être légèrement en retard ; la décision de réservation reste autoritaire.
 5. **Défaillances** : injecter lenteur et échec du paiement, puis défendre timeout, reprise et état visible au client.
-6. **Évolution distribuée** : extraire le paiement en second conteneur applicatif avec sa propre persistance. Choisir le contrat, les états partagés et la stratégie face à un appel répété, tardif ou perdu. L'idempotence, la réconciliation et, dans une extension asynchrone, l'outbox sont des solutions possibles à étudier, pas des éléments déjà implémentés dans le socle.
+6. **Évolution distribuée** : extraire trois services métier après comparaison des frontières possibles. Choisir les contrats, la propriété des données et la stratégie face à un appel répété, tardif ou perdu. L'idempotence, la réconciliation et, dans une extension asynchrone, l'outbox sont des solutions possibles à étudier, pas des éléments déjà implémentés dans le socle.
 
 Chaque atelier demande un résultat exécutable, une mesure ou un test, puis une justification courte. Les consignes séparent les faits imposés des décisions laissées aux étudiants.
 

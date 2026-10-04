@@ -1,0 +1,13 @@
+name: Vérification du socle
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construire et vérifier les parcours ordinaires
+        run: docker compose --profile test run --build --rm test

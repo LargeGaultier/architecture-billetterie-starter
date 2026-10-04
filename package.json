@@ -1,0 +1,29 @@
+{
+  "name": "architecture-billetterie-starter",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Monolithe pédagogique de billetterie pour le cours d'architecture 2027",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "migrate": "tsx src/migrate.ts",
+    "test": "tsx --test tests/api.test.ts",
+    "test:challenge": "tsx --test tests/concurrency.challenge.ts",
+    "load": "node scripts/load.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "fastify": "^5.12.5",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

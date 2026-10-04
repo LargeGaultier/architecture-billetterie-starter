@@ -1,0 +1,90 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ticketing
+      POSTGRES_PASSWORD: ticketing_local
+      POSTGRES_DB: ticketing
+    volumes:
+      - ticketing_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketing -d ticketing"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      target: runtime
+    command: ["node", "dist/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://ticketing:ticketing_local@db:5432/ticketing
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runtime
+    environment:
+      DATABASE_URL: postgres://ticketing:ticketing_local@db:5432/ticketing
+      PORT: 3000
+      RESERVATION_TTL_MINUTES: ${RESERVATION_TTL_MINUTES:-15}
+      PAYMENT_SLOW_MS: ${PAYMENT_SLOW_MS:-2000}
+      LAB_RESERVATION_PAUSE_MS: ${LAB_RESERVATION_PAUSE_MS:-75}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  db-test:
+    image: postgres:16-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: ticketing
+      POSTGRES_PASSWORD: ticketing_local
+      POSTGRES_DB: ticketing_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketing -d ticketing_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  test:
+    build:
+      context: .
+      target: build
+    profiles: ["test"]
+    environment:
+      DATABASE_URL: postgres://ticketing:ticketing_local@db-test:5432/ticketing_test
+    command: ["sh", "-c", "node dist/migrate.js && npm test"]
+    depends_on:
+      db-test:
+        condition: service_healthy
+
+  load:
+    build:
+      context: .
+      target: build
+    profiles: ["load"]
+    environment:
+      BASE_URL: http://app:3000
+      EVENT_ID: ${EVENT_ID:-festival-lumieres}
+      LOAD_SECONDS: ${LOAD_SECONDS:-10}
+      LOAD_CONCURRENCY: ${LOAD_CONCURRENCY:-10}
+    command: ["node", "scripts/load.mjs"]
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  ticketing_data:

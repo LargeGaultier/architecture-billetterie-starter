@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Billetterie — démonstration</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>Billetterie</span></div>
+      <span class="demo-label">Démonstration pédagogique</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="intro-note">Placement libre · événements fictifs</p>
+          <h1 id="page-title">Une place, une décision.</h1>
+          <p class="intro-copy">Consultez les événements, réservez une place et suivez ce que le système peut réellement confirmer.</p>
+        </div>
+        <div class="ticket-stub" aria-hidden="true">
+          <span class="stub-label">Billet démo</span>
+          <span class="stub-number">01</span>
+          <span class="stub-bottom">Architecture 2027</span>
+        </div>
+      </section>
+
+      <div class="content-grid">
+        <section class="event-section" aria-labelledby="events-title">
+          <div class="section-heading">
+            <h2 id="events-title">Événements</h2>
+            <button id="refresh-events" class="text-button" type="button">Actualiser les places</button>
+          </div>
+          <label class="field-label" for="customer-ref">Identifiant visiteur fictif</label>
+          <input id="customer-ref" name="customer-ref" type="text" maxlength="80" value="visiteur-01" autocomplete="off">
+          <div id="events" class="event-list" aria-live="polite"><p class="loading">Chargement des événements…</p></div>
+        </section>
+
+        <aside class="status-panel" aria-labelledby="status-title">
+          <h2 id="status-title">Ma réservation</h2>
+          <p class="panel-copy">L’état affiché ici est celui enregistré par le système.</p>
+          <div id="reservation-state" class="reservation-state" aria-live="polite">Choisissez un événement pour commencer.</div>
+          <div id="checkout-controls" class="checkout-controls" hidden>
+            <label class="field-label" for="scenario">Scénario de paiement fictif</label>
+            <select id="scenario">
+              <option value="success">Paiement accepté</option>
+              <option value="failure">Paiement refusé</option>
+              <option value="slow">Réponse lente ou incertaine</option>
+            </select>
+            <button id="checkout" class="primary-button" type="button">Confirmer l’achat</button>
+          </div>
+          <form id="lookup-form" class="lookup-form">
+            <label class="field-label" for="lookup-id">Retrouver une réservation</label>
+            <div class="lookup-row">
+              <input id="lookup-id" type="text" placeholder="Identifiant de réservation" autocomplete="off">
+              <button type="submit">Consulter</button>
+            </div>
+          </form>
+          <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+        </aside>
+      </div>
+    </main>
+
+    <footer>Application fictive pour apprendre à observer, tester et faire évoluer une architecture.</footer>
+  </div>
+</body>
+</html>
