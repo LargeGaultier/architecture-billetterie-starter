@@ -15,7 +15,7 @@ Le partage est limité aux erreurs, contrats CQRS/horloge/identifiants et utilit
 
 - [x] **Référence et carte :** vérifier les 96 tests du TP 5 ; inventorier les fichiers/données et consigner les frontières contestées.
 - [x] **Regroupement :** déplacer commandes/requêtes, modèles, ports, adaptateurs et tests dans leur module ; réécrire les imports directs, conserver les façades historiques nécessaires ; compilation et tests en mémoire.
-- [ ] **Entrées et assemblage :** routes par module, API publiques, factories et passage explicite de l'identité ; suite complète et commits cohérents.
+- [x] **Entrées et assemblage :** routes par module, API publiques, factories et passage explicite de l'identité ; suite complète et commits cohérents.
 - [ ] **Contrôle :** adapter le vérificateur Clean/CQRS pour les modules et imports privés ; prouver le rejet des accès interdits et des cycles ; vérifier tests, compilation, Docker et parcours réel.
 - [ ] **Rendu :** carte fonctionnelle, diagramme des modules, propriété des données, simulation de changement local et limites ; revue indépendante puis push et vérification de l'ascendance.
 

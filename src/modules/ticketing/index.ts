@@ -1,0 +1,12 @@
+export type { TicketingApi } from './contracts/TicketingApi.js';
+export type { TicketingConfig } from './contracts/TicketingConfig.js';
+export type { CurrentActor } from './contracts/CurrentActor.js';
+export type { Event } from './domain/models/Event.js';
+export type { EventStatus } from './domain/models/EventStatus.js';
+export type { Reservation } from './domain/models/Reservation.js';
+export type { ReservationStatus } from './domain/models/ReservationStatus.js';
+export type { PaymentAttempt } from './domain/models/PaymentAttempt.js';
+export type { PaymentStatus } from './domain/models/PaymentStatus.js';
+export type { PaymentScenario } from './domain/models/PaymentScenario.js';
+export { createTicketingModule } from './bootstrap/createTicketingModule.js';
+export { registerTicketingRoutes } from './adapters/http/registerTicketingRoutes.js';

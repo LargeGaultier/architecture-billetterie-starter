@@ -6,8 +6,11 @@ import { BusinessError, type BusinessErrorCode } from '../src/shared/domain/Busi
 
 function applicationWithFailure(error: Error): Application {
   const failing = { async execute(): Promise<never> { throw error; } };
-  return { commands: { checkoutReservation: failing, expirePendingReservations: failing, loginUser: failing, logoutUser: failing, reservePlace: failing },
-    queries: { getCurrentUser: failing, getEvent: failing, getMyReservation: failing, listEvents: failing } };
+  return {
+    identity: { commands: { loginUser: failing, logoutUser: failing }, queries: { getCurrentUser: failing } },
+    ticketing: { commands: { checkoutReservation: failing, expirePendingReservations: failing, reservePlace: failing },
+      queries: { getEvent: failing, getMyReservation: failing, listEvents: failing } },
+  };
 }
 
 for (const [code, status] of [

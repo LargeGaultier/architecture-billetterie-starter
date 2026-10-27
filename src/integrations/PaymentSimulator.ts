@@ -1,2 +1,2 @@
-// Compatibilite des tests HTTP du TP 3 : meme classe et meme prototype.
-export { PaymentSimulator } from '../modules/ticketing/adapters/payment/PaymentSimulator.js';
+// Compatibilité des tests HTTP : observer le même prototype que l'adaptateur réel.
+export { PaymentSimulator } from '../modules/ticketing/testing.js';

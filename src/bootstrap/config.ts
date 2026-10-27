@@ -1,11 +1,6 @@
-export interface TicketingConfig {
-  reservationTtlMinutes: number;
-  paymentSlowMs: number;
-  reservationHoldMs: number;
-}
+import type { IdentityConfig } from '../modules/identity/index.js';
+export type { TicketingConfig } from '../modules/ticketing/index.js';
 
-export interface AuthConfig {
-  now?: () => number;
-  sessionTtlMs?: number;
+export interface AuthConfig extends IdentityConfig {
   secureCookies?: boolean;
 }
