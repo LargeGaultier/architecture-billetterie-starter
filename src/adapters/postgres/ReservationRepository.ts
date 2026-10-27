@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import type { ReservationStore } from '../../application/ports/ReservationStore.js';
 import type { PendingReservationExpirer } from '../../application/ports/PendingReservationExpirer.js';
+import type { ReservationReader } from '../../application/ports/ReservationReader.js';
 import type { ReservationStatus } from '../../domain/models/ReservationStatus.js';
 import type { Reservation } from '../../domain/models/Reservation.js';
 
@@ -24,7 +25,7 @@ function toView(row: ReservationRow): Reservation {
   };
 }
 
-export class ReservationRepository implements ReservationStore, PendingReservationExpirer {
+export class ReservationRepository implements ReservationStore, PendingReservationExpirer, ReservationReader {
   constructor(private readonly pool: Pool) {}
 
   async expirePending(): Promise<void> {

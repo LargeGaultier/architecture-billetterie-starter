@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
 import type { PaymentAttemptStore } from '../../application/ports/PaymentAttemptStore.js';
+import type { PaymentAttemptReader } from '../../application/ports/PaymentAttemptReader.js';
 import type { PaymentAttempt } from '../../domain/models/PaymentAttempt.js';
 import type { PaymentScenario } from '../../domain/models/PaymentScenario.js';
 import type { PaymentStatus } from '../../domain/models/PaymentStatus.js';
@@ -22,7 +23,7 @@ function toView(row: AttemptRow): PaymentAttempt {
   };
 }
 
-export class PaymentAttemptRepository implements PaymentAttemptStore {
+export class PaymentAttemptRepository implements PaymentAttemptStore, PaymentAttemptReader {
   constructor(private readonly pool: Pool) {}
 
   async create(id: string, reservationId: string, scenario: PaymentScenario): Promise<PaymentAttempt> {

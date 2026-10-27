@@ -1,8 +1,8 @@
 import type { Pool } from 'pg';
-import { CheckoutReservation } from '../application/CheckoutReservation.js';
+import { CheckoutReservationHandler } from '../application/commands/CheckoutReservation.js';
 import { GetCurrentUser } from '../application/GetCurrentUser.js';
 import { GetEventHandler } from '../application/queries/GetEvent.js';
-import { GetReservation } from '../application/GetReservation.js';
+import { GetMyReservationHandler } from '../application/queries/GetMyReservation.js';
 import { ListEvents } from '../application/ListEvents.js';
 import { Login } from '../application/Login.js';
 import { Logout } from '../application/Logout.js';
@@ -28,10 +28,10 @@ export function createUseCases(pool: Pool, config: TicketingConfig, authConfig: 
   const sessionClock = { now: authConfig.now ?? systemClock.now };
   const expirePendingReservations = new ExpirePendingReservationsHandler(reservations);
   return {
-    checkout: new CheckoutReservation(reservations, attempts, new PaymentSimulator(config.paymentSlowMs), uuidIds),
+    checkout: new CheckoutReservationHandler(reservations, attempts, new PaymentSimulator(config.paymentSlowMs), uuidIds, expirePendingReservations),
     me: new GetCurrentUser(sessions, users, sessionClock),
     getEvent: new GetEventHandler(events),
-    getReservation: new GetReservation(reservations, attempts),
+    getReservation: new GetMyReservationHandler(reservations, attempts),
     listEvents: new ListEvents(events, reservations),
     login: new Login(users, new ScryptPasswordVerifier(), sessions, sessionIds, sessionClock, authConfig.sessionTtlMs ?? 30 * 60_000),
     logout: new Logout(sessions),

@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ReservePlaceHandler } from '../../src/application/commands/ReservePlace.js';
-import { GetReservation } from '../../src/application/GetReservation.js';
+import { GetMyReservationHandler } from '../../src/application/queries/GetMyReservation.js';
 import { reservationId, ticketingFixture } from './ticketing-fixture.js';
 
 function fixture() {
   const f = ticketingFixture();
   return { ...f,
     reserve: new ReservePlaceHandler(f.events, f.reservations, f.expiration, f.ids, f.clock, f.pause, { reservationTtlMinutes: 15, reservationHoldMs: 0 }),
-    get: new GetReservation(f.reservations, f.attempts),
+    get: new GetMyReservationHandler(f.reservations, f.attempts),
   };
 }
 
@@ -51,16 +51,16 @@ test('réserver garde la pause pédagogique derrière un port sans attente réel
   assert.deepEqual(f.effects, ['expire', 'pause:75', 'reservation:create']);
 });
 
-test('consulter sa réservation expire au seuil exact et retrouve ses seules tentatives', async () => {
+test('consulter sa réservation retrouve ses seules tentatives sans expiration cachée', async () => {
   const f = fixture();
   const ownAttempt = await f.attempts.create('attempt-1', reservationId, 'slow');
   await f.attempts.create('attempt-2', 'autre-reservation', 'success');
   f.effects.length = 0;
   f.setNow(Date.parse(f.reservation.expiresAt));
-  const result = await f.get.execute(reservationId, 'alice');
-  assert.equal(result.status, 'EXPIRED');
+  const result = await f.get.execute({ reservationId: reservationId, actorId: 'alice' });
+  assert.equal(result.status, 'PENDING');
   assert.deepEqual(result.paymentAttempts, [ownAttempt]);
-  assert.deepEqual(f.effects, ['expire']);
+  assert.deepEqual(f.effects, []);
 });
 
 for (const [id, userId, code] of [
@@ -70,10 +70,10 @@ for (const [id, userId, code] of [
   test(`consultation ${code} sans mutation ni lecture des tentatives`, async () => {
     const f = fixture();
     f.reservation.expiresAt = '2026-01-01T00:00:00.000Z';
-    const get = new GetReservation(f.reservations, {
+    const get = new GetMyReservationHandler(f.reservations, {
       async listForReservation() { assert.fail('Les tentatives privées ne doivent pas être lues.'); },
     });
-    await assert.rejects(get.execute(id, userId), { code });
+    await assert.rejects(get.execute({ reservationId: id, actorId: userId }), { code });
     assert.equal(f.reservation.status, 'PENDING');
     assert.deepEqual(f.effects, []);
   });

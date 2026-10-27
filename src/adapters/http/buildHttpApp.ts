@@ -52,13 +52,18 @@ export function buildHttpApp(useCases: UseCases, options: { secureCookies: boole
   });
   app.get<{ Params: { id: string } }>('/api/reservations/:id', async request => {
     const user = await useCases.me.execute(request.cookies[cookieName]);
-    return { reservation: await useCases.getReservation.execute(request.params.id, user.id) };
+    const query = { reservationId: request.params.id, actorId: user.id };
+    // La première lecture autorise l'accès avant toute maintenance. Un refus
+    // étranger ne doit pas modifier une réservation, même arrivée à expiration.
+    await useCases.getReservation.execute(query);
+    await useCases.expirePendingReservations.execute({});
+    return { reservation: await useCases.getReservation.execute(query) };
   });
   app.post<{ Params: { id: string } }>('/api/reservations/:id/checkout', async request => {
     const user = await useCases.me.execute(request.cookies[cookieName]);
     const body = asRecord(request.body);
     const scenario = typeof body.scenario === 'string' ? body.scenario : 'success';
-    return useCases.checkout.execute(request.params.id, user.id, scenario);
+    return useCases.checkout.execute({ reservationId: request.params.id, actorId: user.id, scenario });
   });
 
   for (const [route, file, type] of [

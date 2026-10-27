@@ -16,7 +16,7 @@ Les ports de requête exposent uniquement la lecture et les DTO nécessaires. Le
 
 - [x] **Référence :** vérifier les 78 tests du TP 4 et conserver le commit de départ.
 - [x] **Première paire :** requête `GetEvent`, commande `ReservePlace`, ports/DTO nécessaires et maintenance explicite ; tests de lecture pure et revalidation d'un événement annulé après affichage ; branchement HTTP et suite complète.
-- [ ] **Réservation privée et checkout :** requête `GetMyReservation`, commande `CheckoutReservation`, DTO privé et ports de lecture ; refus sans effet et lecture devenue ancienne par avancée de l'horloge ; branchement et suite complète.
+- [x] **Réservation privée et checkout :** requête `GetMyReservation`, commande `CheckoutReservation`, DTO privé et ports de lecture ; refus sans effet et lecture devenue ancienne par avancée de l'horloge ; branchement et suite complète.
 - [ ] **Comptes et catalogue :** commandes `LoginUser`/`LogoutUser`, requêtes `GetCurrentUser`/`ListEvents`, ports lecture/effets séparés ; tests des sessions sans prolongation/suppression et DTO sans secret ; retirer les anciens chemins.
 - [ ] **Preuves :** maintenir les tests HTTP du TP 4, ajouter les tests d'orchestration maintenance/lecture et de pureté, vérifier compilation et imports Clean ; documentation avec inventaire, contrats, autorité, gains et coûts.
 - [ ] **Livraison :** revue indépendante, corrections éventuelles prouvées, push et vérification de l'ascendance de `correction/tp5`.
