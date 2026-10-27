@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
-import type { Application } from '../../application/Application.js';
-import { BusinessError } from '../../domain/BusinessError.js';
-import { businessErrorStatus } from './businessErrors.js';
+import type { Application } from '../../contracts/Application.js';
+import { BusinessError } from '../../shared/domain/BusinessError.js';
+import { businessErrorStatus } from '../../shared/adapters/http/businessErrors.js';
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};

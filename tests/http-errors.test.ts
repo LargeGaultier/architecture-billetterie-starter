@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildHttpApp } from '../src/adapters/http/buildHttpApp.js';
-import type { Application } from '../src/application/Application.js';
-import { BusinessError, type BusinessErrorCode } from '../src/domain/BusinessError.js';
+import type { Application } from '../src/contracts/Application.js';
+import { BusinessError, type BusinessErrorCode } from '../src/shared/domain/BusinessError.js';
 
 function applicationWithFailure(error: Error): Application {
   const failing = { async execute(): Promise<never> { throw error; } };

@@ -9,8 +9,8 @@
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "migrate": "tsx src/migrate.ts",
-    "test": "tsx --test --test-concurrency=1 tests/*.test.ts tests/unit/*.test.ts",
-    "test:unit": "tsx --test tests/unit/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts src/modules/*/tests/unit/*.test.ts src/modules/*/tests/integration/*.test.ts",
+    "test:unit": "tsx --test src/modules/*/tests/unit/*.test.ts",
     "check:architecture": "node scripts/check-architecture.mjs",
     "test:challenge": "tsx --test tests/concurrency.challenge.ts",
     "load": "node scripts/load.mjs"

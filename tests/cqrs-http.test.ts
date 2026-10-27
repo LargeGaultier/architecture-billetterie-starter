@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Application } from '../src/application/Application.js';
+import type { Application } from '../src/contracts/Application.js';
 import { buildHttpApp } from '../src/adapters/http/buildHttpApp.js';
-import { BusinessError } from '../src/domain/BusinessError.js';
+import { BusinessError } from '../src/shared/domain/BusinessError.js';
 
 function application(): Application {
   const unexpected = { async execute(): Promise<never> { assert.fail('Parcours inattendu.'); } };

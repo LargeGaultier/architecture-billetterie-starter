@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
-import type { Clock } from '../../application/ports/Clock.js';
-import type { IdGenerator } from '../../application/ports/IdGenerator.js';
-import type { Pause } from '../../application/ports/Pause.js';
+import type { Clock } from '../../shared/application/ports/Clock.js';
+import type { IdGenerator } from '../../shared/application/ports/IdGenerator.js';
+import type { Pause } from '../../modules/ticketing/application/ports/Pause.js';
 
 export const systemClock: Clock = { now: Date.now };
 export const uuidIds: IdGenerator = { next: randomUUID };

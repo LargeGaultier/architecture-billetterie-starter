@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Pool } from 'pg';
-import { seedUsers } from './seedUsers.js';
+import { seedUsers } from './modules/identity/adapters/postgres/seedUsers.js';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 try {
