@@ -1,7 +1,8 @@
 import type { SessionStore } from '../../application/ports/SessionStore.js';
+import type { SessionReader } from '../../application/ports/SessionReader.js';
 import type { Session } from '../../domain/models/Session.js';
 
-export class MemorySessionStore implements SessionStore {
+export class MemorySessionStore implements SessionStore, SessionReader {
   private readonly sessions = new Map<string, Session>();
 
   async save(session: Session): Promise<void> { this.sessions.set(session.id, { ...session }); }

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildHttpApp } from '../src/adapters/http/buildHttpApp.js';
-import type { UseCases } from '../src/application/UseCases.js';
+import type { Application } from '../src/application/Application.js';
 import { BusinessError, type BusinessErrorCode } from '../src/domain/BusinessError.js';
 
-function useCasesWithFailure(error: Error): UseCases {
+function applicationWithFailure(error: Error): Application {
   const failing = { async execute(): Promise<never> { throw error; } };
-  return { checkout: failing, me: failing, getEvent: failing, getReservation: failing,
-    listEvents: failing, login: failing, logout: failing, reserve: failing, expirePendingReservations: failing };
+  return { commands: { checkoutReservation: failing, expirePendingReservations: failing, loginUser: failing, logoutUser: failing, reservePlace: failing },
+    queries: { getCurrentUser: failing, getEvent: failing, getMyReservation: failing, listEvents: failing } };
 }
 
 for (const [code, status] of [
@@ -17,7 +17,7 @@ for (const [code, status] of [
   ['RESERVATION_EXPIRED', 410], ['RESERVATION_CLOSED', 409],
 ] satisfies Array<[BusinessErrorCode, number]>) {
   test(`la périphérie traduit ${code} en HTTP ${status}`, async () => {
-    const app = buildHttpApp(useCasesWithFailure(new BusinessError(code, 'Refus métier.')),
+    const app = buildHttpApp(applicationWithFailure(new BusinessError(code, 'Refus métier.')),
       { secureCookies: false, sessionTtlMs: 1_800_000 }, async () => {});
     try {
       const response = await app.inject('/api/events');
@@ -28,7 +28,7 @@ for (const [code, status] of [
 }
 
 test('une défaillance technique reste une erreur HTTP 503 sans détail interne', async () => {
-  const app = buildHttpApp(useCasesWithFailure(new Error('détail interne')),
+  const app = buildHttpApp(applicationWithFailure(new Error('détail interne')),
     { secureCookies: false, sessionTtlMs: 1_800_000 }, async () => {});
   try {
     const response = await app.inject('/api/events');

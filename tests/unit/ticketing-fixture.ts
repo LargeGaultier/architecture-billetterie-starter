@@ -8,6 +8,9 @@ import type { PaymentAttemptStore } from '../../src/application/ports/PaymentAtt
 import type { PaymentGateway } from '../../src/application/ports/PaymentGateway.js';
 import type { ReservationStore } from '../../src/application/ports/ReservationStore.js';
 import { ExpirePendingReservationsHandler } from '../../src/application/commands/ExpirePendingReservations.js';
+import type { EventReader } from '../../src/application/ports/EventReader.js';
+import type { PaymentAttemptReader } from '../../src/application/ports/PaymentAttemptReader.js';
+import type { PendingReservationExpirer } from '../../src/application/ports/PendingReservationExpirer.js';
 
 export const reservationId = '11111111-1111-4111-8111-111111111111';
 export function ticketingFixture() {
@@ -20,11 +23,11 @@ export function ticketingFixture() {
   const eventRows = new Map([[event.id, event]]);
   const reservationRows = new Map([[reservation.id, reservation]]);
   const attemptRows = new Map<string, PaymentAttempt>();
-  const events: EventStore = {
+  const events: EventStore & EventReader = {
     async list() { return [...eventRows.values()].map(row => ({ ...row })); },
     async find(id) { const row = eventRows.get(id); return row ? { ...row } : null; },
   };
-  const reservations: ReservationStore = {
+  const reservations: ReservationStore & PendingReservationExpirer = {
     async expirePending() {
       effects.push('expire');
       for (const row of reservationRows.values()) {
@@ -45,7 +48,7 @@ export function ticketingFixture() {
       return { ...row };
     },
   };
-  const attempts: PaymentAttemptStore = {
+  const attempts: PaymentAttemptStore & PaymentAttemptReader = {
     async create(id, reservationId, scenario) {
       effects.push('attempt:create');
       const row: PaymentAttempt = { id, reservationId, scenario, status: 'PENDING', createdAt: new Date(now).toISOString() };

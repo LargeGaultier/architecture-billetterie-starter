@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
-import type { UseCases } from '../../application/UseCases.js';
+import type { Application } from '../../application/Application.js';
 import { BusinessError } from '../../domain/BusinessError.js';
 import { businessErrorStatus } from './businessErrors.js';
 
@@ -10,7 +10,7 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
-export function buildHttpApp(useCases: UseCases, options: { secureCookies: boolean; sessionTtlMs: number }, healthcheck: () => Promise<void>) {
+export function buildHttpApp(application: Application, options: { secureCookies: boolean; sessionTtlMs: number }, healthcheck: () => Promise<void>) {
   const app = Fastify({ logger: true });
   app.register(cookie);
   const cookieName = 'ticketing_session';
@@ -28,42 +28,45 @@ export function buildHttpApp(useCases: UseCases, options: { secureCookies: boole
     await healthcheck();
     return reply.send({ status: 'ok' });
   });
-  app.get('/api/events', async () => ({ events: await useCases.listEvents.execute() }));
+  app.get('/api/events', async () => {
+    await application.commands.expirePendingReservations.execute({});
+    return { events: await application.queries.listEvents.execute({}) };
+  });
   app.get<{ Params: { id: string } }>('/api/events/:id', async request => {
-    await useCases.expirePendingReservations.execute({});
-    return { event: await useCases.getEvent.execute({ eventId: request.params.id }) };
+    await application.commands.expirePendingReservations.execute({});
+    return { event: await application.queries.getEvent.execute({ eventId: request.params.id }) };
   });
   app.post('/api/auth/login', async (request, reply) => {
     const body = asRecord(request.body);
-    const result = await useCases.login.execute(body.login, body.password, request.cookies[cookieName]);
+    const result = await application.commands.loginUser.execute({ login: body.login, password: body.password, previousSessionId: request.cookies[cookieName] });
     reply.setCookie(cookieName, result.sessionId, { ...cookieOptions, maxAge: Math.floor(options.sessionTtlMs / 1000) });
     return { user: result.user };
   });
-  app.get('/api/auth/me', async request => ({ user: await useCases.me.execute(request.cookies[cookieName]) }));
+  app.get('/api/auth/me', async request => ({ user: await application.queries.getCurrentUser.execute({ sessionId: request.cookies[cookieName] }) }));
   app.post('/api/auth/logout', async (request, reply) => {
-    await useCases.logout.execute(request.cookies[cookieName]);
+    await application.commands.logoutUser.execute({ sessionId: request.cookies[cookieName] });
     return reply.clearCookie(cookieName, cookieOptions).code(204).send();
   });
   app.post('/api/reservations', async (request, reply) => {
-    const user = await useCases.me.execute(request.cookies[cookieName]);
+    const user = await application.queries.getCurrentUser.execute({ sessionId: request.cookies[cookieName] });
     const body = asRecord(request.body);
     const eventId = typeof body.eventId === 'string' ? body.eventId : '';
-    return reply.code(201).send({ reservation: await useCases.reserve.execute({ eventId, actorId: user.id }) });
+    return reply.code(201).send({ reservation: await application.commands.reservePlace.execute({ eventId, actorId: user.id }) });
   });
   app.get<{ Params: { id: string } }>('/api/reservations/:id', async request => {
-    const user = await useCases.me.execute(request.cookies[cookieName]);
+    const user = await application.queries.getCurrentUser.execute({ sessionId: request.cookies[cookieName] });
     const query = { reservationId: request.params.id, actorId: user.id };
     // La première lecture autorise l'accès avant toute maintenance. Un refus
     // étranger ne doit pas modifier une réservation, même arrivée à expiration.
-    await useCases.getReservation.execute(query);
-    await useCases.expirePendingReservations.execute({});
-    return { reservation: await useCases.getReservation.execute(query) };
+    await application.queries.getMyReservation.execute(query);
+    await application.commands.expirePendingReservations.execute({});
+    return { reservation: await application.queries.getMyReservation.execute(query) };
   });
   app.post<{ Params: { id: string } }>('/api/reservations/:id/checkout', async request => {
-    const user = await useCases.me.execute(request.cookies[cookieName]);
+    const user = await application.queries.getCurrentUser.execute({ sessionId: request.cookies[cookieName] });
     const body = asRecord(request.body);
     const scenario = typeof body.scenario === 'string' ? body.scenario : 'success';
-    return useCases.checkout.execute({ reservationId: request.params.id, actorId: user.id, scenario });
+    return application.commands.checkoutReservation.execute({ reservationId: request.params.id, actorId: user.id, scenario });
   });
 
   for (const [route, file, type] of [
