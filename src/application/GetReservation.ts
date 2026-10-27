@@ -1,6 +1,8 @@
-import type { PaymentAttemptView, ReservationView } from '../domain/models.js';
+import type { PaymentAttempt } from '../domain/models/PaymentAttempt.js';
+import type { Reservation } from '../domain/models/Reservation.js';
 import { requireIdentity, requireOwner, validateReservationId } from '../domain/reservationRules.js';
-import type { PaymentAttemptStore, ReservationStore } from './ports.js';
+import type { PaymentAttemptStore } from './ports/PaymentAttemptStore.js';
+import type { ReservationStore } from './ports/ReservationStore.js';
 
 export class GetReservation {
   constructor(
@@ -8,7 +10,7 @@ export class GetReservation {
     private readonly attempts: Pick<PaymentAttemptStore, 'listForReservation'>,
   ) {}
 
-  async execute(id: string, userId: string | undefined): Promise<ReservationView & { paymentAttempts: PaymentAttemptView[] }> {
+  async execute(id: string, userId: string | undefined): Promise<Reservation & { paymentAttempts: PaymentAttempt[] }> {
     const owner = requireIdentity(userId);
     validateReservationId(id);
     requireOwner(await this.reservations.find(id), owner);

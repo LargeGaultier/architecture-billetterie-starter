@@ -1,7 +1,11 @@
 import { BusinessError } from '../domain/BusinessError.js';
-import type { ReservationView } from '../domain/models.js';
+import type { Reservation } from '../domain/models/Reservation.js';
 import { requireIdentity, requireReservable } from '../domain/reservationRules.js';
-import type { Clock, EventStore, IdGenerator, Pause, ReservationStore } from './ports.js';
+import type { Clock } from './ports/Clock.js';
+import type { EventStore } from './ports/EventStore.js';
+import type { IdGenerator } from './ports/IdGenerator.js';
+import type { Pause } from './ports/Pause.js';
+import type { ReservationStore } from './ports/ReservationStore.js';
 
 export interface ReservationConfig { reservationTtlMinutes: number; reservationHoldMs: number }
 
@@ -15,7 +19,7 @@ export class ReservePlace {
     private readonly config: ReservationConfig,
   ) {}
 
-  async execute(eventId: string, userId: string | undefined): Promise<ReservationView> {
+  async execute(eventId: string, userId: string | undefined): Promise<Reservation> {
     const owner = requireIdentity(userId);
     if (!eventId.trim() || owner.length > 80) {
       throw new BusinessError('INVALID_INPUT', 'Indiquez un événement et un identifiant client fictif.');

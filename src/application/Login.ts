@@ -1,6 +1,10 @@
 import { BusinessError } from '../domain/BusinessError.js';
-import type { UserView } from '../domain/models.js';
-import type { Clock, IdGenerator, PasswordVerifier, SessionStore, UserStore } from './ports.js';
+import type { User } from '../domain/models/User.js';
+import type { Clock } from './ports/Clock.js';
+import type { IdGenerator } from './ports/IdGenerator.js';
+import type { PasswordVerifier } from './ports/PasswordVerifier.js';
+import type { SessionStore } from './ports/SessionStore.js';
+import type { UserStore } from './ports/UserStore.js';
 
 export class Login {
   constructor(
@@ -14,7 +18,7 @@ export class Login {
     if (!Number.isFinite(ttlMs) || ttlMs < 1000) throw new Error('Durée de session invalide.');
   }
 
-  async execute(login: unknown, password: unknown, previousSessionId?: string): Promise<{ user: UserView; sessionId: string }> {
+  async execute(login: unknown, password: unknown, previousSessionId?: string): Promise<{ user: User; sessionId: string }> {
     if (typeof login !== 'string' || typeof password !== 'string' ||
         !login.trim() || login.length > 80 || !password || password.length > 1024) {
       throw new BusinessError('INVALID_CREDENTIALS', 'Identifiants incorrects.');

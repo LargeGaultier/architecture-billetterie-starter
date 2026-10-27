@@ -21,3 +21,10 @@ Les tests HTTP/front/migration du TP 3 restent inchangés. Les anciennes entrée
 ## Points de revue
 
 401/403 avant effet ; même priorité des erreurs ; expiration conservée sur les lectures ; aucune dépendance technique ni statut HTTP dans domaine/application ; sessions à expiration fixe avec horloge contrôlable ; mots de passe/hashes absents des réponses ; faux adaptateurs sans Fastify ni PostgreSQL ; pas de CQRS ni correction de concurrence anticipée.
+
+## Ajustement demandé après revue utilisateur
+
+- [x] Un port par fichier dans `application/ports/`, avec imports directs et suppression de `ports.ts`.
+- [x] Un modèle ou état par fichier dans `domain/models/`, avec `User.ts`, `UserAccount.ts` et `Session.ts` explicites ; suppression de `models.ts` et conservation des anciens alias uniquement dans `src/types.ts`.
+- [x] Compilation, 43 tests en mémoire et contrôle des dépendances après réorganisation.
+- [x] Mise à jour documentaire, suite complète Docker (78 tests), revue et publication sur la même branche `correction/tp4`.

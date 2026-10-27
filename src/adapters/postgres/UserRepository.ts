@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
-import type { UserAccount, UserView } from '../../domain/models.js';
-import type { UserStore } from '../../application/ports.js';
+import type { UserAccount } from '../../domain/models/UserAccount.js';
+import type { User } from '../../domain/models/User.js';
+import type { UserStore } from '../../application/ports/UserStore.js';
 
 interface UserRow { id: string; login: string; password_hash: string }
 
@@ -13,8 +14,8 @@ export class UserRepository implements UserStore {
     return row ? { id: row.id, login: row.login, passwordHash: row.password_hash } : null;
   }
 
-  async findById(id: string): Promise<UserView | null> {
-    const result = await this.pool.query<UserView>('SELECT id, login FROM users WHERE id=$1', [id]);
+  async findById(id: string): Promise<User | null> {
+    const result = await this.pool.query<User>('SELECT id, login FROM users WHERE id=$1', [id]);
     return result.rows[0] ?? null;
   }
 }

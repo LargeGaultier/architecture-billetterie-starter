@@ -1,4 +1,4 @@
-import type { SessionStore } from './ports.js';
+import type { SessionStore } from './ports/SessionStore.js';
 
 export class Logout {
   constructor(private readonly sessions: Pick<SessionStore, 'revoke'>) {}

@@ -85,8 +85,10 @@ La [méthode de découpage](docs/ateliers/decoupage-fonctionnel.md) guide l'enqu
 
 ```text
 public/                interface du TP 3 conservée
-src/domain/            modèles, règles et erreurs sans HTTP
-src/application/       huit cas d'usage et ports
+src/domain/models/     un fichier par modèle ou état (User, UserAccount, Event…)
+src/domain/            règles et erreurs sans HTTP
+src/application/ports/ un fichier par port (UserStore, SessionStore, EventStore…)
+src/application/       huit cas d'usage
 src/adapters/http/     routes, cookies, traduction des erreurs
 src/adapters/postgres/ réalisations SQL des ports
 src/adapters/auth/     scrypt et sessions mémoire
@@ -101,5 +103,7 @@ scripts/               contrôle des dépendances et mesure de charge
 ```
 
 Les anciens services ont été remplacés par des cas d'usage construits dans `src/bootstrap/createUseCases.ts`. Les décisions de propriété, d'annulation et de paiement ne connaissent ni Fastify, ni SQL, ni cookie. Le domaine exprime des erreurs métier ; l'adaptateur HTTP choisit leur statut. Voir [la correction TP 4](docs/corrections/tp4.md) pour l'inventaire, les schémas et les résultats de validation.
+
+Le modèle utilisateur est explicite : [`User`](src/domain/models/User.ts) contient `id` et `login`, [`UserAccount`](src/domain/models/UserAccount.ts) ajoute le hash utilisé pour la connexion, et [`Session`](src/domain/models/Session.ts) associe un token à un utilisateur et une expiration. Le port [`UserStore`](src/application/ports/UserStore.ts) distingue la lecture du compte pour la connexion et celle de l'identité publique. Les cas d'usage et adaptateurs importent chaque type depuis son propre fichier.
 
 La suite comporte **43 tests en mémoire**, les **24 tests du TP 3 inchangés** et **11 tests de traduction des erreurs HTTP** : **78 tests ordinaires**. La concurrence, l'idempotence et la persistance des sessions restent les ateliers suivants.

@@ -1,5 +1,5 @@
-import type { SessionStore } from '../../application/ports.js';
-import type { Session } from '../../domain/models.js';
+import type { SessionStore } from '../../application/ports/SessionStore.js';
+import type { Session } from '../../domain/models/Session.js';
 
 export class MemorySessionStore implements SessionStore {
   private readonly sessions = new Map<string, Session>();

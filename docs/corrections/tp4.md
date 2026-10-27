@@ -58,7 +58,30 @@ flowchart LR
     SYSTEM -. réalise .-> PORTS
 ```
 
-`src/domain/models.ts` contient des données simples. `reservationRules.ts` porte l'identité requise, la propriété, l'événement réservable, l'état payable, le scénario valide et les transitions liées au résultat du paiement. `BusinessError` contient un code et un message, sans statut HTTP.
+`src/domain/models/` contient un fichier par modèle ou état. Les modèles métier sont nommés `User`, `UserAccount`, `Session`, `Event`, `Reservation` et `PaymentAttempt`, chacun dans son fichier. `EventStatus`, `ReservationStatus`, `PaymentStatus` et `PaymentScenario` ont également chacun leur fichier. `reservationRules.ts` porte l'identité requise, la propriété, l'événement réservable, l'état payable, le scénario valide et les transitions liées au résultat du paiement. `BusinessError` contient un code et un message, sans statut HTTP.
+
+```text
+src/domain/
+  models/
+    User.ts
+    UserAccount.ts
+    Session.ts
+    Event.ts
+    EventStatus.ts
+    Reservation.ts
+    ReservationStatus.ts
+    PaymentAttempt.ts
+    PaymentStatus.ts
+    PaymentScenario.ts
+  BusinessError.ts
+  reservationRules.ts
+```
+
+### Où est l'utilisateur ?
+
+`models/User.ts` définit l'identité métier publique (`id`, `login`). `models/UserAccount.ts` étend cette identité avec `passwordHash`, nécessaire à la vérification des identifiants. `models/Session.ts` représente le lien entre le token, `userId` et l'expiration. Une nouvelle réservation conserve l'identifiant de cet utilisateur dans `customerRef`, conformément au contrat acquis au TP 3.
+
+`application/ports/UserStore.ts` retourne un `UserAccount` pour la connexion et un `User` pour les autres parcours. `Login` construit explicitement la réponse avec les seuls champs publics : le compte avec son hash n'est pas retourné au navigateur. Les anciens noms `UserView`, `EventView`, `ReservationView` et `PaymentAttemptView` restent uniquement des alias dans `src/types.ts` pour la compatibilité du socle.
 
 Les cas d'usage orchestrent ces règles et les ports. Les cookies et statuts restent dans `adapters/http`, le SQL dans `adapters/postgres`, le hash et la Map des sessions dans `adapters/auth`. La date limite de session est décidée par le parcours applicatif ; le stockage mémoire ne décide pas si une session autorise une requête.
 
@@ -75,7 +98,23 @@ Les cas d'usage orchestrent ces règles et les ports. Les cookies et statuts res
 | `ListEvents.execute()` | Expirer les réservations comme au TP 3 puis lire le catalogue, sans identité. |
 | `GetEvent.execute(id)` | Même expiration puis lecture du détail ; refuser l'événement absent. |
 
-Les dix interfaces de `application/ports.ts` correspondent aux opérations réellement utilisées : `EventStore`, `ReservationStore`, `PaymentAttemptStore`, `PaymentGateway`, `UserStore`, `PasswordVerifier`, `SessionStore`, `Clock`, `IdGenerator`, `Pause`. Les constructeurs utilisent `Pick<Port, ...>` quand un parcours n'utilise qu'une partie des opérations. Ils ne reçoivent donc pas de dépendances de paiement pour une simple consultation.
+Les dix interfaces sont définies dans `application/ports/`, avec **un fichier par port**, et correspondent aux opérations réellement utilisées :
+
+```text
+src/application/ports/
+  EventStore.ts
+  ReservationStore.ts
+  PaymentAttemptStore.ts
+  PaymentGateway.ts
+  UserStore.ts
+  PasswordVerifier.ts
+  SessionStore.ts
+  Clock.ts
+  IdGenerator.ts
+  Pause.ts
+```
+
+Chaque cas d'usage importe les interfaces depuis ces fichiers explicites. Les constructeurs utilisent `Pick<Port, ...>` quand un parcours n'utilise qu'une partie des opérations. Ils ne reçoivent donc pas de dépendances de paiement pour une simple consultation. Il n'y a plus de fichier collectif `application/ports.ts` ni de fichier collectif `domain/models.ts`.
 
 `UseCases` décrit les huit entrées utilisées par HTTP. Il ne contient ni bus ni distinction commande/requête. Les lectures conservent les effets d'expiration existants ; leur séparation sera le TP 5.
 
@@ -123,7 +162,7 @@ npm run build
 npm run check:architecture
 ```
 
-Le contrôle parcourt les imports du domaine et de l'application avec le scanner de TypeScript 7 installé dans le dépôt, y compris les réexports et appels `import`/`require`. Sur cette correction : **3 fichiers domaine, 10 fichiers application, 33 imports internes autorisés**. Les imports extérieurs à ces couches sont refusés. Cela vérifie la direction des dépendances ; les tests de comportement vérifient la justesse des décisions.
+Le contrôle parcourt récursivement les imports du domaine et de l'application avec le scanner de TypeScript 7 installé dans le dépôt, y compris les sous-dossiers, réexports et appels `import`/`require`. Après séparation des ports et modèles : **12 fichiers domaine, 19 fichiers application, 69 imports internes autorisés**. Les imports extérieurs à ces couches sont refusés. Cela vérifie la direction des dépendances ; les tests de comportement vérifient la justesse des décisions.
 
 La validation Docker finale a utilisé un export exact de l'index Git hors OneDrive : le moteur local refusait de lire un fichier déplacé avec un attribut de fichier cloud dans le contexte original. Le même Dockerfile et la même configuration Compose y construisent et testent l'application. Ce contournement de validation ne modifie aucun fichier livré.
 
@@ -133,7 +172,7 @@ L'image d'exécution a aussi été démarrée avec Compose et sa santé vérifi�
 
 Le refus de propriété, l'expiration d'une session et les transitions de paiement sont maintenant prouvés sans infrastructure. C'est un gain mesuré par les 43 tests indépendants. Les tests HTTP restent nécessaires : un faux vérificateur ne prouve ni scrypt, ni le cookie, ni le SQL.
 
-Le coût est visible : les sources TypeScript passent de **15 à 33 fichiers**, avec **8 cas d'usage**, **10 interfaces de ports**, **11 fichiers d'adaptateurs** et un assemblage explicite. Les tests doivent maintenir des faux fidèles aux opérations utilisées. Cette structure ne prouve pas à elle seule un gain de débit ou une meilleure disponibilité.
+Le coût est visible : les sources TypeScript passent de **15 à 51 fichiers**, avec **8 cas d'usage**, **10 interfaces de ports dans 10 fichiers**, **10 fichiers de modèles et états**, **11 fichiers d'adaptateurs** et un assemblage explicite. La première extraction utilisait 33 fichiers ; la séparation demandée en revue en ajoute 18 pour rendre chaque modèle et chaque port directement accessible. Les tests doivent maintenir des faux fidèles aux opérations utilisées. Cette structure ne prouve pas à elle seule un gain de débit ou une meilleure disponibilité.
 
 | Changement envisagé | Fichiers concernés et preuves conservées |
 | --- | --- |

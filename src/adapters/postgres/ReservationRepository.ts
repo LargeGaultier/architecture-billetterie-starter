@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
-import type { ReservationStore } from '../../application/ports.js';
-import type { ReservationStatus, ReservationView } from '../../domain/models.js';
+import type { ReservationStore } from '../../application/ports/ReservationStore.js';
+import type { ReservationStatus } from '../../domain/models/ReservationStatus.js';
+import type { Reservation } from '../../domain/models/Reservation.js';
 
 interface ReservationRow {
   id: string;
@@ -11,7 +12,7 @@ interface ReservationRow {
   expires_at: Date;
 }
 
-function toView(row: ReservationRow): ReservationView {
+function toView(row: ReservationRow): Reservation {
   return {
     id: row.id,
     eventId: row.event_id,
@@ -29,7 +30,7 @@ export class ReservationRepository implements ReservationStore {
     await this.pool.query("UPDATE reservations SET status = 'EXPIRED' WHERE status = 'PENDING' AND expires_at <= now()");
   }
 
-  async create(id: string, eventId: string, customerRef: string, expiresAt: Date): Promise<ReservationView> {
+  async create(id: string, eventId: string, customerRef: string, expiresAt: Date): Promise<Reservation> {
     const result = await this.pool.query<ReservationRow>(
       'INSERT INTO reservations (id, event_id, customer_ref, status, expires_at) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [id, eventId, customerRef, 'PENDING', expiresAt],
@@ -37,12 +38,12 @@ export class ReservationRepository implements ReservationStore {
     return toView(result.rows[0]);
   }
 
-  async find(id: string): Promise<ReservationView | null> {
+  async find(id: string): Promise<Reservation | null> {
     const result = await this.pool.query<ReservationRow>('SELECT * FROM reservations WHERE id = $1', [id]);
     return result.rows[0] ? toView(result.rows[0]) : null;
   }
 
-  async changeStatus(id: string, status: ReservationStatus): Promise<ReservationView> {
+  async changeStatus(id: string, status: ReservationStatus): Promise<Reservation> {
     const result = await this.pool.query<ReservationRow>('UPDATE reservations SET status = $2 WHERE id = $1 RETURNING *', [id, status]);
     return toView(result.rows[0]);
   }

@@ -1,6 +1,8 @@
 import type { Pool } from 'pg';
-import type { PaymentAttemptStore } from '../../application/ports.js';
-import type { PaymentAttemptView, PaymentScenario, PaymentStatus } from '../../domain/models.js';
+import type { PaymentAttemptStore } from '../../application/ports/PaymentAttemptStore.js';
+import type { PaymentAttempt } from '../../domain/models/PaymentAttempt.js';
+import type { PaymentScenario } from '../../domain/models/PaymentScenario.js';
+import type { PaymentStatus } from '../../domain/models/PaymentStatus.js';
 
 interface AttemptRow {
   id: string;
@@ -10,7 +12,7 @@ interface AttemptRow {
   created_at: Date;
 }
 
-function toView(row: AttemptRow): PaymentAttemptView {
+function toView(row: AttemptRow): PaymentAttempt {
   return {
     id: row.id,
     reservationId: row.reservation_id,
@@ -23,7 +25,7 @@ function toView(row: AttemptRow): PaymentAttemptView {
 export class PaymentAttemptRepository implements PaymentAttemptStore {
   constructor(private readonly pool: Pool) {}
 
-  async create(id: string, reservationId: string, scenario: PaymentScenario): Promise<PaymentAttemptView> {
+  async create(id: string, reservationId: string, scenario: PaymentScenario): Promise<PaymentAttempt> {
     const result = await this.pool.query<AttemptRow>(
       'INSERT INTO payment_attempts (id, reservation_id, scenario, status) VALUES ($1, $2, $3, $4) RETURNING *',
       [id, reservationId, scenario, 'PENDING'],
@@ -31,12 +33,12 @@ export class PaymentAttemptRepository implements PaymentAttemptStore {
     return toView(result.rows[0]);
   }
 
-  async changeStatus(id: string, status: PaymentStatus): Promise<PaymentAttemptView> {
+  async changeStatus(id: string, status: PaymentStatus): Promise<PaymentAttempt> {
     const result = await this.pool.query<AttemptRow>('UPDATE payment_attempts SET status = $2 WHERE id = $1 RETURNING *', [id, status]);
     return toView(result.rows[0]);
   }
 
-  async listForReservation(reservationId: string): Promise<PaymentAttemptView[]> {
+  async listForReservation(reservationId: string): Promise<PaymentAttempt[]> {
     const result = await this.pool.query<AttemptRow>(
       'SELECT * FROM payment_attempts WHERE reservation_id = $1 ORDER BY created_at, id',
       [reservationId],

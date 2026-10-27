@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
-import type { EventStore } from '../../application/ports.js';
-import type { EventStatus, EventView } from '../../domain/models.js';
+import type { EventStore } from '../../application/ports/EventStore.js';
+import type { EventStatus } from '../../domain/models/EventStatus.js';
+import type { Event } from '../../domain/models/Event.js';
 
 interface EventRow {
   id: string;
@@ -21,7 +22,7 @@ const availabilitySql = `
          ) AS available
   FROM events e`;
 
-function toView(row: EventRow): EventView {
+function toView(row: EventRow): Event {
   return {
     id: row.id,
     title: row.title,
@@ -36,12 +37,12 @@ function toView(row: EventRow): EventView {
 export class EventRepository implements EventStore {
   constructor(private readonly pool: Pool) {}
 
-  async list(): Promise<EventView[]> {
+  async list(): Promise<Event[]> {
     const result = await this.pool.query<EventRow>(`${availabilitySql} ORDER BY e.starts_at, e.id`);
     return result.rows.map(toView);
   }
 
-  async find(id: string): Promise<EventView | null> {
+  async find(id: string): Promise<Event | null> {
     const result = await this.pool.query<EventRow>(`${availabilitySql} WHERE e.id = $1`, [id]);
     return result.rows[0] ? toView(result.rows[0]) : null;
   }

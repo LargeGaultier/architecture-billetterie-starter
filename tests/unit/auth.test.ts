@@ -3,8 +3,11 @@ import { test } from 'node:test';
 import { Login } from '../../src/application/Login.js';
 import { GetCurrentUser } from '../../src/application/GetCurrentUser.js';
 import { Logout } from '../../src/application/Logout.js';
-import type { Session, UserAccount } from '../../src/domain/models.js';
-import type { PasswordVerifier, SessionStore, UserStore } from '../../src/application/ports.js';
+import type { Session } from '../../src/domain/models/Session.js';
+import type { UserAccount } from '../../src/domain/models/UserAccount.js';
+import type { PasswordVerifier } from '../../src/application/ports/PasswordVerifier.js';
+import type { SessionStore } from '../../src/application/ports/SessionStore.js';
+import type { UserStore } from '../../src/application/ports/UserStore.js';
 
 function fixture() {
   let now = 1_000;

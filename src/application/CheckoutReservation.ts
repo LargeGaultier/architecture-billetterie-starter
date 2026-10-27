@@ -1,6 +1,10 @@
-import type { PaymentAttemptView, ReservationView } from '../domain/models.js';
+import type { PaymentAttempt } from '../domain/models/PaymentAttempt.js';
+import type { Reservation } from '../domain/models/Reservation.js';
 import { paymentScenario, requireIdentity, requireOwner, requirePayable, reservationStatusAfterPayment, validateReservationId } from '../domain/reservationRules.js';
-import type { IdGenerator, PaymentAttemptStore, PaymentGateway, ReservationStore } from './ports.js';
+import type { IdGenerator } from './ports/IdGenerator.js';
+import type { PaymentAttemptStore } from './ports/PaymentAttemptStore.js';
+import type { PaymentGateway } from './ports/PaymentGateway.js';
+import type { ReservationStore } from './ports/ReservationStore.js';
 
 export class CheckoutReservation {
   constructor(
@@ -10,7 +14,7 @@ export class CheckoutReservation {
     private readonly ids: IdGenerator,
   ) {}
 
-  async execute(id: string, userId: string | undefined, scenario: string): Promise<{ reservation: ReservationView; paymentAttempt: PaymentAttemptView }> {
+  async execute(id: string, userId: string | undefined, scenario: string): Promise<{ reservation: Reservation; paymentAttempt: PaymentAttempt }> {
     const owner = requireIdentity(userId);
     validateReservationId(id);
     requireOwner(await this.reservations.find(id), owner);

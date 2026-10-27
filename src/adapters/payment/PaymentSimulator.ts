@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import type { PaymentScenario, PaymentStatus } from '../../domain/models.js';
-import type { PaymentGateway } from '../../application/ports.js';
+import type { PaymentScenario } from '../../domain/models/PaymentScenario.js';
+import type { PaymentStatus } from '../../domain/models/PaymentStatus.js';
+import type { PaymentGateway } from '../../application/ports/PaymentGateway.js';
 
 export class PaymentSimulator implements PaymentGateway {
   constructor(private readonly slowMs: number) {}

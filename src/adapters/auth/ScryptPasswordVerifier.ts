@@ -1,4 +1,4 @@
-import type { PasswordVerifier } from '../../application/ports.js';
+import type { PasswordVerifier } from '../../application/ports/PasswordVerifier.js';
 import { verifyPassword } from './passwords.js';
 
 // Conserve le calcul scrypt du TP 3 pour un login inconnu, sans exposer ce détail au cas d'usage.
