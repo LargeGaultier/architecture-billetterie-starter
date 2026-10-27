@@ -11,6 +11,7 @@
     "migrate": "tsx src/migrate.ts",
     "test": "tsx --test --test-concurrency=1 tests/*.test.ts tests/unit/*.test.ts",
     "test:unit": "tsx --test tests/unit/*.test.ts",
+    "check:architecture": "node scripts/check-architecture.mjs",
     "test:challenge": "tsx --test tests/concurrency.challenge.ts",
     "load": "node scripts/load.mjs"
   },

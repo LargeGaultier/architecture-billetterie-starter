@@ -1,5 +1,5 @@
 import type { Pool } from 'pg';
-import { hashPassword } from './passwords.js';
+import { hashPassword } from './adapters/auth/passwords.js';
 
 export async function seedUsers(pool: Pool): Promise<void> {
   // Comptes fictifs publics de l'atelier, pas des identifiants de production.

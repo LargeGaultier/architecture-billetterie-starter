@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
-import type { PaymentAttemptView, PaymentScenario, PaymentStatus } from '../types.js';
+import type { PaymentAttemptStore } from '../../application/ports.js';
+import type { PaymentAttemptView, PaymentScenario, PaymentStatus } from '../../domain/models.js';
 
 interface AttemptRow {
   id: string;
@@ -19,7 +20,7 @@ function toView(row: AttemptRow): PaymentAttemptView {
   };
 }
 
-export class PaymentAttemptRepository {
+export class PaymentAttemptRepository implements PaymentAttemptStore {
   constructor(private readonly pool: Pool) {}
 
   async create(id: string, reservationId: string, scenario: PaymentScenario): Promise<PaymentAttemptView> {

@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
-import type { UserAccount, UserView } from '../domain/models.js';
-import type { UserStore } from '../application/ports.js';
+import type { UserAccount, UserView } from '../../domain/models.js';
+import type { UserStore } from '../../application/ports.js';
 
 interface UserRow { id: string; login: string; password_hash: string }
 

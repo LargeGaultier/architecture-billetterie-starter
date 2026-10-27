@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
-import type { ReservationStatus, ReservationView } from '../types.js';
+import type { ReservationStore } from '../../application/ports.js';
+import type { ReservationStatus, ReservationView } from '../../domain/models.js';
 
 interface ReservationRow {
   id: string;
@@ -21,7 +22,7 @@ function toView(row: ReservationRow): ReservationView {
   };
 }
 
-export class ReservationRepository {
+export class ReservationRepository implements ReservationStore {
   constructor(private readonly pool: Pool) {}
 
   async expirePending(): Promise<void> {

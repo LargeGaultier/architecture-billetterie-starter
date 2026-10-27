@@ -1,5 +1,5 @@
 import type { PasswordVerifier } from '../../application/ports.js';
-import { verifyPassword } from '../../passwords.js';
+import { verifyPassword } from './passwords.js';
 
 // Conserve le calcul scrypt du TP 3 pour un login inconnu, sans exposer ce détail au cas d'usage.
 const dummyHash = `scrypt$${'0'.repeat(32)}$${'0'.repeat(128)}`;

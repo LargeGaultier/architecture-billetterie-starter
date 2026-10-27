@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
-import type { EventStatus, EventView } from '../types.js';
+import type { EventStore } from '../../application/ports.js';
+import type { EventStatus, EventView } from '../../domain/models.js';
 
 interface EventRow {
   id: string;
@@ -32,7 +33,7 @@ function toView(row: EventRow): EventView {
   };
 }
 
-export class EventRepository {
+export class EventRepository implements EventStore {
   constructor(private readonly pool: Pool) {}
 
   async list(): Promise<EventView[]> {
