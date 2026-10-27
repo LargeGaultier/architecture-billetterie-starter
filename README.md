@@ -1,8 +1,8 @@
 # Billetterie — socle du cours d'architecture
 
-Cette branche contient la [correction du TP 5 — CQRS](docs/corrections/tp5.md), issue de `correction/tp4` au commit `68176aa`. Les corrections [TP 2](docs/corrections/tp2.md), [TP 3](docs/corrections/tp3.md) et [TP 4](docs/corrections/tp4.md) restent disponibles sur leurs branches et servent de références.
+Cette branche contient la [correction du TP 6 — vertical slices](docs/corrections/tp6.md), issue de `correction/tp5` au commit `557127d`. Les corrections [TP 2](docs/corrections/tp2.md), [TP 3](docs/corrections/tp3.md), [TP 4](docs/corrections/tp4.md) et [TP 5](docs/corrections/tp5.md) restent disponibles sur leurs branches et servent de références.
 
-Une billetterie fictive pour étudier les choix d'architecture à partir d'un cas métier : **un monolithe TypeScript/Node.js avec domaine, commandes, requêtes et adaptateurs**, une interface web, PostgreSQL et un paiement simulé. Le TP 5 conserve les fonctionnalités, les contrats HTTP et le formulaire de connexion du TP 4.
+Une billetterie fictive pour étudier les choix d'architecture à partir d'un cas métier : **un monolithe TypeScript/Node.js organisé en modules Identité et Billetterie**, une interface web, PostgreSQL et un paiement simulé. Le TP 6 conserve les fonctionnalités, les contrats HTTP et le formulaire de connexion, ainsi que Clean Architecture et CQRS dans chaque module.
 
 ## Démarrer
 
@@ -49,7 +49,7 @@ Une réservation conserve le champ `customerRef`, mais le serveur le remplit ave
 | --- | --- |
 | Lancer les tests ordinaires dans un conteneur | `docker compose --profile test run --build --rm test` |
 | Tester les décisions sans base ni serveur (Node.js et `npm ci`) | `npm run test:unit` |
-| Vérifier les imports Clean et les dépendances de lecture des requêtes | `npm run check:architecture` |
+| Vérifier les frontières, les imports Clean/CQRS et la propriété des tables | `npm run check:architecture` |
 | Observer le défaut de concurrence initial | `docker compose --profile test run --rm test sh -c 'node dist/migrate.js && npm run test:challenge'` |
 | Mesurer la consultation pendant 10 secondes | `docker compose --profile load run --build --rm load` |
 | Arrêter les conteneurs en gardant les données | `docker compose down` |
@@ -81,33 +81,33 @@ Commencer par découvrir les objets et parcours métier **avant** d'utiliser les
 
 La [méthode de découpage](docs/ateliers/decoupage-fonctionnel.md) guide l'enquête sans nommer les services attendus. Le [modèle d'ADR](docs/adr-template.md) et les [règles d'usage de l'IA](docs/usage-ia.md) accompagnent la justification des décisions.
 
-## Structure du TP 5
+## Structure du TP 6
 
 ```text
-public/                interface du TP 3 conservée
-src/domain/models/     un fichier par modèle ou état (User, UserAccount, Event…)
-src/domain/            règles et erreurs sans HTTP
-src/application/commands/ cinq commandes, avec leurs demandes et résultats
-src/application/queries/  quatre requêtes sans écriture
-src/application/dto/      un fichier par DTO de consultation
-src/application/ports/    un fichier par port de lecture, décision ou effet
-src/adapters/http/     routes, cookies, traduction des erreurs
-src/adapters/postgres/ réalisations SQL des ports
-src/adapters/auth/     scrypt et sessions mémoire
-src/adapters/payment/  paiement fictif
-src/adapters/system/   horloge, identifiants et temporisation
-src/bootstrap/        assemblage des composants
-src/app.ts             entrée compatible du serveur et des tests
-db/                    migrations et données conservées
-tests/unit/            décisions en mémoire, sans base ni Fastify
-tests/                 contrats HTTP, front, migration et défi séparé
-scripts/               contrôle des dépendances et mesure de charge
+public/                              interface du TP 3 conservée
+src/modules/identity/                comptes et sessions
+src/modules/ticketing/               catalogue, réservation et paiement
+  index.ts                          API publique du module
+  contracts/                        contrats d'intégration
+  application/{commands,queries,dto,ports}/
+  domain/models/                    un fichier par modèle
+  adapters/                         HTTP, PostgreSQL et autres détails
+  bootstrap/                        assemblage local
+  tests/                            tests métier et maintenance colocalisés
+src/shared/                         erreurs et petits contrats/outils communs
+src/bootstrap/                      assemblage des modules et configuration
+src/adapters/http/                  serveur commun, fichiers statiques, /health
+src/contracts/Application.ts        API agrégée des deux modules
+src/app.ts                          entrée compatible du serveur et des tests
+db/                                 migrations et données conservées
+tests/                              contrats HTTP, front, architecture et migration
+scripts/                            contrôle des frontières et mesure de charge
 ```
 
-`src/bootstrap/createApplication.ts` assemble les handlers dans deux groupes, `commands` et `queries`. Les décisions de propriété, d'annulation et de paiement ne connaissent ni Fastify, ni SQL, ni cookie. Le domaine exprime des erreurs métier ; l'adaptateur HTTP choisit leur statut. Voir [la correction TP 5](docs/corrections/tp5.md) pour l'inventaire, les contrats, les schémas et les résultats de validation.
+`src/bootstrap/createApplication.ts` assemble les deux modules par leurs points d'entrée publics. Chacun expose ses `commands` et `queries`. Les décisions de propriété, d'annulation et de paiement ne connaissent ni Fastify, ni SQL, ni cookie. Le serveur branche le contrat `CurrentActor` de Billetterie sur l'API publique Identité et ne transmet que l'identifiant vérifié. Voir [la correction TP 6](docs/corrections/tp6.md) pour la carte fonctionnelle, les frontières, les schémas et la simulation de changement.
 
-Le modèle utilisateur est explicite : [`User`](src/domain/models/User.ts) contient `id` et `login`, [`UserAccount`](src/domain/models/UserAccount.ts) ajoute le hash utilisé pour la connexion, et [`Session`](src/domain/models/Session.ts) associe un token à un utilisateur et une expiration. [`UserStore`](src/application/ports/UserStore.ts) charge le compte nécessaire à la commande de connexion ; [`UserReader`](src/application/ports/UserReader.ts) fournit les données publiques à la requête utilisateur. Chaque port, modèle et DTO est défini dans son propre fichier.
+Le modèle utilisateur est dans Identité : [`User`](src/modules/identity/domain/models/User.ts) contient `id` et `login`, [`UserAccount`](src/modules/identity/domain/models/UserAccount.ts) ajoute le hash utilisé pour la connexion, et [`Session`](src/modules/identity/domain/models/Session.ts) associe un token à un utilisateur et une expiration. [`UserStore`](src/modules/identity/application/ports/UserStore.ts) charge le compte nécessaire à la connexion ; [`UserReader`](src/modules/identity/application/ports/UserReader.ts) fournit les données publiques. Chaque port, modèle et DTO est défini dans son propre fichier.
 
-Les requêtes ne déclenchent pas l'expiration. La commande interne `ExpirePendingReservations` appartient aux changements d'état. Les routes publiques la déclenchent avant de consulter ; la consultation privée vérifie d'abord les droits, déclenche la maintenance puis relit le DTO. Les commandes de réservation et de checkout la réutilisent pour décider sur l'état courant. Le stockage PostgreSQL et les sessions mémoire restent communs.
+Les requêtes ne déclenchent pas l'expiration. La commande interne `ExpirePendingReservations` appartient aux changements d'état. Les routes publiques la déclenchent avant de consulter ; la consultation privée vérifie d'abord les droits, déclenche la maintenance puis relit le DTO. Les commandes de réservation et de checkout la réutilisent pour décider sur l'état courant. PostgreSQL reste unique ; les sessions mémoire appartiennent à Identité et sont partagées entre ses handlers.
 
-La suite comporte **53 tests en mémoire**, les **24 tests historiques inchangés**, **11 tests de traduction des erreurs HTTP** et **8 tests de maintenance/orchestration CQRS** : **96 tests ordinaires**. La concurrence, l'idempotence et la persistance des sessions restent les ateliers suivants.
+La suite comporte **53 tests en mémoire**, les **24 tests historiques inchangés**, **11 tests de traduction des erreurs HTTP**, **8 tests de maintenance/orchestration CQRS** et **8 tests des frontières architecturales** : **104 tests ordinaires**. La concurrence, l'idempotence et la persistance des sessions restent les ateliers suivants.

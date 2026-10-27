@@ -16,9 +16,13 @@ Le partage est limité aux erreurs, contrats CQRS/horloge/identifiants et utilit
 - [x] **Référence et carte :** vérifier les 96 tests du TP 5 ; inventorier les fichiers/données et consigner les frontières contestées.
 - [x] **Regroupement :** déplacer commandes/requêtes, modèles, ports, adaptateurs et tests dans leur module ; réécrire les imports directs, conserver les façades historiques nécessaires ; compilation et tests en mémoire.
 - [x] **Entrées et assemblage :** routes par module, API publiques, factories et passage explicite de l'identité ; suite complète et commits cohérents.
-- [ ] **Contrôle :** adapter le vérificateur Clean/CQRS pour les modules et imports privés ; prouver le rejet des accès interdits et des cycles ; vérifier tests, compilation, Docker et parcours réel.
-- [ ] **Rendu :** carte fonctionnelle, diagramme des modules, propriété des données, simulation de changement local et limites ; revue indépendante puis push et vérification de l'ascendance.
+- [x] **Contrôle :** adapter le vérificateur Clean/CQRS pour les modules et imports privés ; prouver le rejet des accès interdits et des cycles ; vérifier tests, compilation, Docker et parcours réel.
+- [x] **Rendu :** carte fonctionnelle, diagramme des modules, propriété des données, simulation de changement local et limites ; revue indépendante et préparation de la publication sur la branche dédiée.
 
 ## Points de revue
 
 Pas de table/repository étranger atteint par un module ; identité fournie explicitement ; même instance de session pour les trois parcours ; droits avant maintenance ; requêtes sans écriture ; API/JSON/cookies et garantie de refus inchangés ; tests réellement colocalisés sans inclusion dans l'image compilée de production ; aucun découpage réseau, bus ou nouveau mécanisme métier.
+
+## Résultats
+
+104 tests ordinaires réussis dans Docker, dont 53 tests en mémoire et huit tests des frontières ; compilation et contrôle architectural réussis. Le parcours HTTP réel confirme réservation/paiement, propriété et déconnexion. Les 84 fichiers compilés de production ne contiennent aucun test. La simulation isolée conserve un seul module touché (38 tests Billetterie et 16 Identité réussis). Le défi de concurrence reste en échec attendu, deux demandes pour une place, pour le TP 8. Revue indépendante du code et de la documentation : aucun défaut bloquant. Voir `docs/corrections/tp6.md`.
