@@ -1,19 +1,23 @@
 import type { CheckoutReservation } from './CheckoutReservation.js';
 import type { GetCurrentUser } from './GetCurrentUser.js';
-import type { GetEvent } from './GetEvent.js';
+import type { GetEventQuery, GetEventResult } from './queries/GetEvent.js';
 import type { GetReservation } from './GetReservation.js';
 import type { ListEvents } from './ListEvents.js';
 import type { Login } from './Login.js';
 import type { Logout } from './Logout.js';
-import type { ReservePlace } from './ReservePlace.js';
+import type { ReservePlaceCommand, ReservePlaceResult } from './commands/ReservePlace.js';
+import type { ExpirePendingReservationsCommand } from './commands/ExpirePendingReservations.js';
+import type { CommandHandler } from './ports/CommandHandler.js';
+import type { QueryHandler } from './ports/QueryHandler.js';
 
 export interface UseCases {
   checkout: Pick<CheckoutReservation, 'execute'>;
   me: Pick<GetCurrentUser, 'execute'>;
-  getEvent: Pick<GetEvent, 'execute'>;
+  getEvent: QueryHandler<GetEventQuery, GetEventResult>;
   getReservation: Pick<GetReservation, 'execute'>;
   listEvents: Pick<ListEvents, 'execute'>;
   login: Pick<Login, 'execute'>;
   logout: Pick<Logout, 'execute'>;
-  reserve: Pick<ReservePlace, 'execute'>;
+  reserve: CommandHandler<ReservePlaceCommand, ReservePlaceResult>;
+  expirePendingReservations: CommandHandler<ExpirePendingReservationsCommand, void>;
 }

@@ -1,12 +1,13 @@
 import type { Pool } from 'pg';
 import { CheckoutReservation } from '../application/CheckoutReservation.js';
 import { GetCurrentUser } from '../application/GetCurrentUser.js';
-import { GetEvent } from '../application/GetEvent.js';
+import { GetEventHandler } from '../application/queries/GetEvent.js';
 import { GetReservation } from '../application/GetReservation.js';
 import { ListEvents } from '../application/ListEvents.js';
 import { Login } from '../application/Login.js';
 import { Logout } from '../application/Logout.js';
-import { ReservePlace } from '../application/ReservePlace.js';
+import { ReservePlaceHandler } from '../application/commands/ReservePlace.js';
+import { ExpirePendingReservationsHandler } from '../application/commands/ExpirePendingReservations.js';
 import type { UseCases } from '../application/UseCases.js';
 import { MemorySessionStore } from '../adapters/auth/MemorySessionStore.js';
 import { ScryptPasswordVerifier } from '../adapters/auth/ScryptPasswordVerifier.js';
@@ -25,14 +26,16 @@ export function createUseCases(pool: Pool, config: TicketingConfig, authConfig: 
   const users = new UserRepository(pool);
   const sessions = new MemorySessionStore();
   const sessionClock = { now: authConfig.now ?? systemClock.now };
+  const expirePendingReservations = new ExpirePendingReservationsHandler(reservations);
   return {
     checkout: new CheckoutReservation(reservations, attempts, new PaymentSimulator(config.paymentSlowMs), uuidIds),
     me: new GetCurrentUser(sessions, users, sessionClock),
-    getEvent: new GetEvent(events, reservations),
+    getEvent: new GetEventHandler(events),
     getReservation: new GetReservation(reservations, attempts),
     listEvents: new ListEvents(events, reservations),
     login: new Login(users, new ScryptPasswordVerifier(), sessions, sessionIds, sessionClock, authConfig.sessionTtlMs ?? 30 * 60_000),
     logout: new Logout(sessions),
-    reserve: new ReservePlace(events, reservations, uuidIds, systemClock, timerPause, config),
+    reserve: new ReservePlaceHandler(events, reservations, expirePendingReservations, uuidIds, systemClock, timerPause, config),
+    expirePendingReservations,
   };
 }

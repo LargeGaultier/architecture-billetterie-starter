@@ -29,7 +29,10 @@ export function buildHttpApp(useCases: UseCases, options: { secureCookies: boole
     return reply.send({ status: 'ok' });
   });
   app.get('/api/events', async () => ({ events: await useCases.listEvents.execute() }));
-  app.get<{ Params: { id: string } }>('/api/events/:id', async request => ({ event: await useCases.getEvent.execute(request.params.id) }));
+  app.get<{ Params: { id: string } }>('/api/events/:id', async request => {
+    await useCases.expirePendingReservations.execute({});
+    return { event: await useCases.getEvent.execute({ eventId: request.params.id }) };
+  });
   app.post('/api/auth/login', async (request, reply) => {
     const body = asRecord(request.body);
     const result = await useCases.login.execute(body.login, body.password, request.cookies[cookieName]);
@@ -45,7 +48,7 @@ export function buildHttpApp(useCases: UseCases, options: { secureCookies: boole
     const user = await useCases.me.execute(request.cookies[cookieName]);
     const body = asRecord(request.body);
     const eventId = typeof body.eventId === 'string' ? body.eventId : '';
-    return reply.code(201).send({ reservation: await useCases.reserve.execute(eventId, user.id) });
+    return reply.code(201).send({ reservation: await useCases.reserve.execute({ eventId, actorId: user.id }) });
   });
   app.get<{ Params: { id: string } }>('/api/reservations/:id', async request => {
     const user = await useCases.me.execute(request.cookies[cookieName]);

@@ -7,7 +7,7 @@ import { BusinessError, type BusinessErrorCode } from '../src/domain/BusinessErr
 function useCasesWithFailure(error: Error): UseCases {
   const failing = { async execute(): Promise<never> { throw error; } };
   return { checkout: failing, me: failing, getEvent: failing, getReservation: failing,
-    listEvents: failing, login: failing, logout: failing, reserve: failing };
+    listEvents: failing, login: failing, logout: failing, reserve: failing, expirePendingReservations: failing };
 }
 
 for (const [code, status] of [

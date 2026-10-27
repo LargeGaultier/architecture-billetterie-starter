@@ -7,6 +7,7 @@ import type { IdGenerator } from '../../src/application/ports/IdGenerator.js';
 import type { PaymentAttemptStore } from '../../src/application/ports/PaymentAttemptStore.js';
 import type { PaymentGateway } from '../../src/application/ports/PaymentGateway.js';
 import type { ReservationStore } from '../../src/application/ports/ReservationStore.js';
+import { ExpirePendingReservationsHandler } from '../../src/application/commands/ExpirePendingReservations.js';
 
 export const reservationId = '11111111-1111-4111-8111-111111111111';
 export function ticketingFixture() {
@@ -63,7 +64,8 @@ export function ticketingFixture() {
   const ids: IdGenerator = { next: () => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}` };
   const clock = { now: () => now };
   const pause = { async wait(ms: number) { effects.push(`pause:${ms}`); } };
-  return { events, reservations, attempts, payment, ids, clock, pause, effects, event, reservation,
+  const expiration = new ExpirePendingReservationsHandler(reservations);
+  return { events, reservations, attempts, payment, ids, clock, pause, effects, event, reservation, expiration,
     eventRows, reservationRows, attemptRows, setNow: (value: number) => { now = value; },
     setPaymentResult: (value: PaymentStatus) => { paymentResult = value; } };
 }
