@@ -12,12 +12,19 @@ before(async () => {
 after(async () => { await app.close(); await pool.end(); });
 
 test('une seule demande doit occuper la dernière place', async () => {
-  const requests = ['client-a', 'client-b'].map(customerRef => app.inject({
+  const cookies = await Promise.all(['alice', 'bob'].map(async login => {
+    const response = await app.inject({ method: 'POST', url: '/api/auth/login',
+      payload: { login, password: login === 'alice' ? 'Alice-demo-2027!' : 'Bob-demo-2027!' } });
+    assert.equal(response.statusCode, 200);
+    return `ticketing_session=${response.cookies[0].value}`;
+  }));
+  const requests = cookies.map(cookie => app.inject({
     method: 'POST', url: '/api/reservations',
-    payload: { eventId: 'atelier-une-place', customerRef },
+    headers: { cookie }, payload: { eventId: 'atelier-une-place' },
   }));
   const responses = await Promise.all(requests);
   const accepted = responses.filter(response => response.statusCode === 201).length;
+  assert.ok(responses.every(response => [201, 409].includes(response.statusCode)), 'Les demandes authentifiées doivent atteindre la décision de capacité.');
   const result = await pool.query<{ active: number }>(
     "SELECT count(*)::int AS active FROM reservations WHERE event_id = 'atelier-une-place' AND status IN ('PENDING','CONFIRMED')",
   );

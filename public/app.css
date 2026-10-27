@@ -62,3 +62,9 @@ input, select { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px so
 footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
 @media (max-width: 760px) { .page-shell { padding: 0 18px; } .topbar { min-height: 70px; } .brand { font-size: 24px; } .demo-label { font-size: 12px; } .intro { grid-template-columns: 1fr; gap: 28px; padding: 42px 0; } .ticket-stub { display: none; } .content-grid { grid-template-columns: 1fr; } .event-section, .status-panel { padding: 22px; } }
 @media (max-width: 470px) { .section-heading { display: block; } .text-button { margin-bottom: 10px; } .event-card { grid-template-columns: 1fr; } .event-card button { width: 100%; } }
+.account-panel { margin-bottom: 1.5rem; }
+.account-panel form { display: grid; gap: .5rem; margin-bottom: .75rem; }
+.account-panel form[hidden] { display: none; }
+.account-panel input { width: 100%; box-sizing: border-box; }
+.account-panel details { margin-top: .75rem; }
+.account-panel summary { cursor: pointer; }

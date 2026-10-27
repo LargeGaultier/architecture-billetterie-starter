@@ -1,8 +1,8 @@
 # Billetterie — socle du cours d'architecture
 
-Cette branche contient la [correction du TP 2](docs/corrections/tp2.md), ses tests et le diagnostic du N-Layer. La règle d'annulation retourne `409 EVENT_CANCELLED` sans créer de réservation.
+Cette branche contient les corrections [TP 2](docs/corrections/tp2.md) et [TP 3](docs/corrections/tp3.md), avec leurs tests et schémas N-Layer. `correction/tp2` contient l'étape annulation seule ; `correction/tp3` repart de cette branche et ajoute l'achat connecté.
 
-Une billetterie fictive, exécutable dès le départ, pour étudier les choix d'architecture à partir d'un cas métier. Le dépôt fournit **un monolithe TypeScript/Node.js en couches**, une interface web, PostgreSQL et un paiement simulé. Les frontières métier et les solutions des ateliers sont à construire et à défendre par les étudiants.
+Une billetterie fictive pour étudier les choix d'architecture à partir d'un cas métier : **un monolithe TypeScript/Node.js en couches**, une interface web, PostgreSQL et un paiement simulé. Cette correction conserve les couches du socle ; la refactorisation Clean commence au TP 4.
 
 ## Démarrer
 
@@ -23,12 +23,25 @@ L'application démarre avec trois événements fictifs, dont un événement d'un
 
 ## Parcours de démonstration
 
-1. Choisir un événement et saisir un identifiant visiteur **fictif**.
+1. Consulter le catalogue public, puis se connecter avec un compte fictif ci-dessous.
 2. Réserver une place. La réservation est `PENDING` et retient la place pendant 15 minutes par défaut.
 3. Déclencher le paiement simulé : `success` confirme, `failure` refuse et libère la place, `slow` laisse le résultat en attente.
 4. Copier l'identifiant de réservation et consulter son état dans le panneau de suivi.
 
 Le scénario `slow` attend 2 secondes par défaut. Il ne contacte aucun prestataire et ne débite personne. Une réservation en attente expirée libère sa place lors d'une prochaine requête. Les états et leurs limites sont décrits dans [l'architecture initiale](docs/architecture-initiale.md).
+
+### Comptes fictifs du TP 3
+
+| Login | Mot de passe public de démonstration |
+| --- | --- |
+| `alice` | `Alice-demo-2027!` |
+| `bob` | `Bob-demo-2027!` |
+
+La migration `002_users.sql` et l'initialisation des comptes sont exécutées au démarrage, y compris sur un volume existant. Les mots de passe sont stockés sous forme de hashes scrypt avec un sel aléatoire distinct. Une nouvelle exécution conserve les comptes et leurs hashes.
+
+La session opaque dure 30 minutes, sans prolongation à la lecture. Elle est conservée en mémoire : redémarrer l'application déconnecte les utilisateurs et plusieurs instances ne partagent pas les sessions. Le cookie est `HttpOnly`, `SameSite=Lax`, `Path=/`. Pour un déploiement HTTPS, définir `AUTH_COOKIE_SECURE=true` ; laisser `false` pour le HTTP local.
+
+Une réservation conserve le champ `customerRef`, mais le serveur le remplit avec l'identifiant du compte de la session. Un auteur envoyé par le navigateur est ignoré. Lors du premier passage au TP 3, les références historiques reçoivent le préfixe `legacy:` : une ancienne référence libre identique à `user-alice` ne devient ainsi pas une preuve de propriété. Les passages suivants préservent les nouveaux auteurs authentifiés.
 
 ## Commandes d'atelier
 
@@ -50,12 +63,15 @@ Pour modifier la durée ou la pression de charge, définir les variables `LOAD_S
 | --- | --- |
 | `GET /api/events` | Liste et places affichées |
 | `GET /api/events/:id` | Détail d'un événement |
-| `POST /api/reservations` | Réserver une place avec `{ "eventId": "festival-lumieres", "customerRef": "demo-1" }` |
-| `GET /api/reservations/:id` | État et tentatives de paiement |
-| `POST /api/reservations/:id/checkout` | Paiement fictif avec `{ "scenario": "success" }`, `failure` ou `slow` |
+| `POST /api/auth/login` | Connexion avec `{ "login": "alice", "password": "Alice-demo-2027!" }`, retourne `{ "user": { "id": "user-alice", "login": "alice" } }` et le cookie |
+| `GET /api/auth/me` | Compte de la session courante, même réponse publique |
+| `POST /api/auth/logout` | Invalide la session, efface le cookie, retourne `204` |
+| `POST /api/reservations` | Connecté : réserver avec `{ "eventId": "festival-lumieres" }` |
+| `GET /api/reservations/:id` | Propriétaire connecté : état et tentatives de paiement |
+| `POST /api/reservations/:id/checkout` | Propriétaire connecté : paiement fictif avec `{ "scenario": "success" }`, `failure` ou `slow` |
 | `GET /health` | Santé de l'application et accès à la base |
 
-Les erreurs JSON ont la forme `{ "error": { "code": "…", "message": "…" } }`. La réservation peut renvoyer `400` (entrée invalide), `404` (événement absent) ou `409` (plus de place). Le checkout peut également renvoyer `410` (réservation expirée). Une erreur technique retourne `503`.
+Les erreurs JSON ont la forme `{ "error": { "code": "…", "message": "…" } }`. Sans session valide : `401 AUTH_REQUIRED`. Connexion refusée : `401 INVALID_CREDENTIALS`. Accès à une réservation étrangère : `403 RESERVATION_FORBIDDEN`. La réservation peut renvoyer `400` (entrée invalide), `404` (événement absent) ou `409` (`EVENT_CANCELLED` ou `SOLD_OUT`). Le checkout peut également renvoyer `410` (réservation expirée) ou `409 RESERVATION_CLOSED`. Une erreur technique retourne `503`.
 
 ## Progression pédagogique
 
@@ -76,4 +92,4 @@ tests/              parcours ordinaires et défi séparé
 scripts/            mesure de charge simple
 ```
 
-Le code de départ concentre volontairement plusieurs responsabilités dans `TicketingService`. Certaines garanties restent à construire. Lire [les limites connues](docs/architecture-initiale.md) avant de modifier le système.
+`AuthService` vérifie les comptes et orchestre la connexion ; `SessionService` conserve les sessions. `TicketingService` garde les décisions d'annulation, de propriété et de paiement. Voir [la correction TP 3](docs/corrections/tp3.md) pour le modèle fonctionnel, les dépendances et les preuves. La concurrence et l'idempotence restent les ateliers suivants.

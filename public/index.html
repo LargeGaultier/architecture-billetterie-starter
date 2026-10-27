@@ -34,8 +34,22 @@
             <h2 id="events-title">Événements</h2>
             <button id="refresh-events" class="text-button" type="button">Actualiser les places</button>
           </div>
-          <label class="field-label" for="customer-ref">Identifiant visiteur fictif</label>
-          <input id="customer-ref" name="customer-ref" type="text" maxlength="80" value="visiteur-01" autocomplete="off">
+          <div class="account-panel">
+            <p id="account-status" aria-live="polite">Connectez-vous pour réserver et acheter. Le catalogue est public.</p>
+            <form id="login-form">
+              <label class="field-label" for="login">Compte fictif</label>
+              <input id="login" name="login" type="text" maxlength="80" autocomplete="username" required>
+              <label class="field-label" for="password">Mot de passe de démonstration</label>
+              <input id="password" name="password" type="password" maxlength="1024" autocomplete="current-password" required>
+              <button id="login-button" type="submit">Se connecter</button>
+            </form>
+            <button id="logout" type="button" hidden>Se déconnecter</button>
+            <p id="auth-feedback" role="status" aria-live="polite"></p>
+            <details><summary>Comptes de démonstration</summary>
+              <p>Alice : <code>alice</code> / <code>Alice-demo-2027!</code><br>
+                Bob : <code>bob</code> / <code>Bob-demo-2027!</code></p>
+            </details>
+          </div>
           <div id="events" class="event-list" aria-live="polite"><p class="loading">Chargement des événements…</p></div>
         </section>
 

@@ -3,6 +3,8 @@ export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'EXPIRED';
 export type PaymentStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED';
 export type PaymentScenario = 'success' | 'failure' | 'slow';
 
+export interface UserView { id: string; login: string }
+
 export interface EventView {
   id: string;
   title: string;

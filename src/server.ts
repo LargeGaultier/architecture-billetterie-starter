@@ -11,6 +11,8 @@ const app = buildApp(pool, {
   reservationTtlMinutes: numberFromEnv('RESERVATION_TTL_MINUTES', 15),
   paymentSlowMs: numberFromEnv('PAYMENT_SLOW_MS', 2000),
   reservationHoldMs: numberFromEnv('LAB_RESERVATION_PAUSE_MS', 75),
+}, {
+  secureCookies: process.env.AUTH_COOKIE_SECURE === 'true',
 });
 
 async function stop() {

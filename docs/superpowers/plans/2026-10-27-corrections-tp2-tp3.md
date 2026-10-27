@@ -6,11 +6,11 @@
 
 ## Étapes
 
-- [ ] TP 2 : ajouter des tests HTTP refusant l'événement annulé et le changement depuis une consultation ouverte, vérifier leur échec, ajouter le contrôle dans `TicketingService.reserve`, rejouer les tests et documenter le trajet/coût. Commit sur `correction/tp2`.
-- [ ] TP 3 : tests HTTP via vraie connexion, absence d'effet pour 401/403, identité forgée, expiration contrôlée, déconnexion, états antérieurs. Vérifier l'échec avant l'implémentation.
-- [ ] Ajouter migration utilisateurs et initialisation idempotente des deux comptes, `UserRepository`, `AuthService`, `SessionService`, cookies et routes. Contrôler la propriété avant expiration ou paiement pour éviter tout effet en cas de refus.
-- [ ] Adapter l'interface et le défi concurrent pour les comptes connectés ; conserver le défi séparé et volontairement rouge sur la survente du TP 8.
-- [ ] Documenter modèles, services, limites et trace IA ; construire/tester Docker, revoir l'ensemble et publier `correction/tp2` et `correction/tp3`.
+- [x] TP 2 : ajouter des tests HTTP refusant l'événement annulé et le changement depuis une consultation ouverte, vérifier leur échec, ajouter le contrôle dans `TicketingService.reserve`, rejouer les tests et documenter le trajet/coût. Commit sur `correction/tp2`.
+- [x] TP 3 : tests HTTP via vraie connexion, absence d'effet pour 401/403, identité forgée, expiration contrôlée, déconnexion, états antérieurs. Vérifier l'échec avant l'implémentation.
+- [x] Ajouter migration utilisateurs et initialisation idempotente des deux comptes, `UserRepository`, `AuthService`, `SessionService`, cookies et routes. Contrôler la propriété avant expiration ou paiement pour éviter tout effet en cas de refus.
+- [x] Adapter l'interface et le défi concurrent pour les comptes connectés ; conserver le défi séparé et volontairement rouge sur la survente du TP 8.
+- [x] Documenter modèles, services, limites et trace IA ; construire/tester Docker, revoir l'ensemble et publier `correction/tp2` et `correction/tp3`.
 
 ## Points de revue
 

@@ -54,22 +54,30 @@ export class TicketingService {
     return this.reservations.create(randomUUID(), eventId, customerRef.trim(), expiresAt);
   }
 
-  async getReservation(id: string): Promise<ReservationView & { paymentAttempts: PaymentAttemptView[] }> {
+  private async ownedReservation(id: string, userId: string): Promise<ReservationView> {
     this.validateReservationId(id);
-    await this.reservations.expirePending();
     const reservation = await this.reservations.find(id);
     if (!reservation) throw new AppError(404, 'RESERVATION_NOT_FOUND', 'Réservation introuvable.');
+    if (reservation.customerRef !== userId) {
+      throw new AppError(403, 'RESERVATION_FORBIDDEN', 'Cette réservation appartient à un autre utilisateur.');
+    }
+    return reservation;
+  }
+
+  async getReservation(id: string, userId: string): Promise<ReservationView & { paymentAttempts: PaymentAttemptView[] }> {
+    await this.ownedReservation(id, userId);
+    await this.reservations.expirePending();
+    const reservation = (await this.reservations.find(id))!;
     return { ...reservation, paymentAttempts: await this.paymentAttempts.listForReservation(id) };
   }
 
-  async checkout(id: string, scenario: PaymentScenario): Promise<{ reservation: ReservationView; paymentAttempt: PaymentAttemptView }> {
-    this.validateReservationId(id);
+  async checkout(id: string, scenario: PaymentScenario, userId: string): Promise<{ reservation: ReservationView; paymentAttempt: PaymentAttemptView }> {
+    await this.ownedReservation(id, userId);
     if (!['success', 'failure', 'slow'].includes(scenario)) {
       throw new AppError(400, 'INVALID_INPUT', 'Scénario de paiement invalide.');
     }
     await this.reservations.expirePending();
-    const reservation = await this.reservations.find(id);
-    if (!reservation) throw new AppError(404, 'RESERVATION_NOT_FOUND', 'Réservation introuvable.');
+    const reservation = (await this.reservations.find(id))!;
     if (reservation.status === 'EXPIRED') throw new AppError(410, 'RESERVATION_EXPIRED', 'La réservation a expiré.');
     if (reservation.status !== 'PENDING') throw new AppError(409, 'RESERVATION_CLOSED', 'La réservation ne peut plus être payée.');
 
