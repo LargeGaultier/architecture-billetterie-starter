@@ -1,8 +1,8 @@
 # Billetterie — socle du cours d'architecture
 
-Cette branche contient la [correction du TP 4 — Clean Architecture](docs/corrections/tp4.md), issue de `correction/tp3`. Les corrections [TP 2](docs/corrections/tp2.md) et [TP 3](docs/corrections/tp3.md) restent disponibles sur leurs branches et servent de référence avant refactorisation.
+Cette branche contient la [correction du TP 5 — CQRS](docs/corrections/tp5.md), issue de `correction/tp4` au commit `68176aa`. Les corrections [TP 2](docs/corrections/tp2.md), [TP 3](docs/corrections/tp3.md) et [TP 4](docs/corrections/tp4.md) restent disponibles sur leurs branches et servent de références.
 
-Une billetterie fictive pour étudier les choix d'architecture à partir d'un cas métier : **un monolithe TypeScript/Node.js avec domaine, cas d'usage et adaptateurs**, une interface web, PostgreSQL et un paiement simulé. Le TP 4 conserve les fonctionnalités, les contrats HTTP et le formulaire de connexion du TP 3.
+Une billetterie fictive pour étudier les choix d'architecture à partir d'un cas métier : **un monolithe TypeScript/Node.js avec domaine, commandes, requêtes et adaptateurs**, une interface web, PostgreSQL et un paiement simulé. Le TP 5 conserve les fonctionnalités, les contrats HTTP et le formulaire de connexion du TP 4.
 
 ## Démarrer
 
@@ -49,7 +49,7 @@ Une réservation conserve le champ `customerRef`, mais le serveur le remplit ave
 | --- | --- |
 | Lancer les tests ordinaires dans un conteneur | `docker compose --profile test run --build --rm test` |
 | Tester les décisions sans base ni serveur (Node.js et `npm ci`) | `npm run test:unit` |
-| Vérifier les imports du domaine et de l'application | `npm run check:architecture` |
+| Vérifier les imports Clean et les dépendances de lecture des requêtes | `npm run check:architecture` |
 | Observer le défaut de concurrence initial | `docker compose --profile test run --rm test sh -c 'node dist/migrate.js && npm run test:challenge'` |
 | Mesurer la consultation pendant 10 secondes | `docker compose --profile load run --build --rm load` |
 | Arrêter les conteneurs en gardant les données | `docker compose down` |
@@ -81,14 +81,16 @@ Commencer par découvrir les objets et parcours métier **avant** d'utiliser les
 
 La [méthode de découpage](docs/ateliers/decoupage-fonctionnel.md) guide l'enquête sans nommer les services attendus. Le [modèle d'ADR](docs/adr-template.md) et les [règles d'usage de l'IA](docs/usage-ia.md) accompagnent la justification des décisions.
 
-## Structure du TP 4
+## Structure du TP 5
 
 ```text
 public/                interface du TP 3 conservée
 src/domain/models/     un fichier par modèle ou état (User, UserAccount, Event…)
 src/domain/            règles et erreurs sans HTTP
-src/application/ports/ un fichier par port (UserStore, SessionStore, EventStore…)
-src/application/       huit cas d'usage
+src/application/commands/ cinq commandes, avec leurs demandes et résultats
+src/application/queries/  quatre requêtes sans écriture
+src/application/dto/      un fichier par DTO de consultation
+src/application/ports/    un fichier par port de lecture, décision ou effet
 src/adapters/http/     routes, cookies, traduction des erreurs
 src/adapters/postgres/ réalisations SQL des ports
 src/adapters/auth/     scrypt et sessions mémoire
@@ -102,8 +104,10 @@ tests/                 contrats HTTP, front, migration et défi séparé
 scripts/               contrôle des dépendances et mesure de charge
 ```
 
-Les anciens services ont été remplacés par des cas d'usage construits dans `src/bootstrap/createUseCases.ts`. Les décisions de propriété, d'annulation et de paiement ne connaissent ni Fastify, ni SQL, ni cookie. Le domaine exprime des erreurs métier ; l'adaptateur HTTP choisit leur statut. Voir [la correction TP 4](docs/corrections/tp4.md) pour l'inventaire, les schémas et les résultats de validation.
+`src/bootstrap/createApplication.ts` assemble les handlers dans deux groupes, `commands` et `queries`. Les décisions de propriété, d'annulation et de paiement ne connaissent ni Fastify, ni SQL, ni cookie. Le domaine exprime des erreurs métier ; l'adaptateur HTTP choisit leur statut. Voir [la correction TP 5](docs/corrections/tp5.md) pour l'inventaire, les contrats, les schémas et les résultats de validation.
 
-Le modèle utilisateur est explicite : [`User`](src/domain/models/User.ts) contient `id` et `login`, [`UserAccount`](src/domain/models/UserAccount.ts) ajoute le hash utilisé pour la connexion, et [`Session`](src/domain/models/Session.ts) associe un token à un utilisateur et une expiration. Le port [`UserStore`](src/application/ports/UserStore.ts) distingue la lecture du compte pour la connexion et celle de l'identité publique. Les cas d'usage et adaptateurs importent chaque type depuis son propre fichier.
+Le modèle utilisateur est explicite : [`User`](src/domain/models/User.ts) contient `id` et `login`, [`UserAccount`](src/domain/models/UserAccount.ts) ajoute le hash utilisé pour la connexion, et [`Session`](src/domain/models/Session.ts) associe un token à un utilisateur et une expiration. [`UserStore`](src/application/ports/UserStore.ts) charge le compte nécessaire à la commande de connexion ; [`UserReader`](src/application/ports/UserReader.ts) fournit les données publiques à la requête utilisateur. Chaque port, modèle et DTO est défini dans son propre fichier.
 
-La suite comporte **43 tests en mémoire**, les **24 tests du TP 3 inchangés** et **11 tests de traduction des erreurs HTTP** : **78 tests ordinaires**. La concurrence, l'idempotence et la persistance des sessions restent les ateliers suivants.
+Les requêtes ne déclenchent pas l'expiration. La commande interne `ExpirePendingReservations` appartient aux changements d'état. Les routes publiques la déclenchent avant de consulter ; la consultation privée vérifie d'abord les droits, déclenche la maintenance puis relit le DTO. Les commandes de réservation et de checkout la réutilisent pour décider sur l'état courant. Le stockage PostgreSQL et les sessions mémoire restent communs.
+
+La suite comporte **53 tests en mémoire**, les **24 tests historiques inchangés**, **11 tests de traduction des erreurs HTTP** et **8 tests de maintenance/orchestration CQRS** : **96 tests ordinaires**. La concurrence, l'idempotence et la persistance des sessions restent les ateliers suivants.
