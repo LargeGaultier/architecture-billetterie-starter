@@ -3,7 +3,7 @@ import { CheckoutReservation } from '../application/CheckoutReservation.js';
 import { ReservePlace } from '../application/ReservePlace.js';
 import { GetReservation } from '../application/GetReservation.js';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { AppError } from '../errors.js';
+import { BusinessError } from '../domain/BusinessError.js';
 import { PaymentSimulator } from '../integrations/PaymentSimulator.js';
 import { EventRepository } from '../repositories/EventRepository.js';
 import { PaymentAttemptRepository } from '../repositories/PaymentAttemptRepository.js';
@@ -33,7 +33,7 @@ export class TicketingService {
   async getEvent(id: string): Promise<EventView> {
     await this.reservations.expirePending();
     const event = await this.events.find(id);
-    if (!event) throw new AppError(404, 'EVENT_NOT_FOUND', 'Événement introuvable.');
+    if (!event) throw new BusinessError('EVENT_NOT_FOUND', 'Événement introuvable.');
     return event;
   }
 

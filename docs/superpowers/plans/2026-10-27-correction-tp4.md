@@ -14,7 +14,7 @@ Les tests HTTP/front/migration du TP 3 restent inchangés. Les anciennes entrée
 
 - [x] **Checkout** : écrire les tests en mémoire (identité, propriétaire, états, résultats et absence d'effets), constater leur échec avant extraction ; introduire modèles, erreurs, ports et règles ; brancher le cas d'usage à la place de l'ancien checkout ; vérifier les 24 tests et committer.
 - [x] **Réservations** : tests en mémoire de création, annulation, complet, auteur, expiration et consultation privée ; extraire `ReservePlace` et `GetReservation`, garder l'ordre des effets ; vérifier toute la suite et committer.
-- [ ] **Comptes et sessions** : tests de connexion correcte/refusée, rotation, session absente/expirée, compte disparu et déconnexion ; extraire `Login`, `GetCurrentUser`, `Logout`, les ports et adaptateurs ; déplacer cookies et traduction HTTP à la périphérie ; vérifier toute la suite et committer.
+- [x] **Comptes et sessions** : tests de connexion correcte/refusée, rotation, session absente/expirée, compte disparu et déconnexion ; extraire `Login`, `GetCurrentUser`, `Logout`, les ports et adaptateurs ; déplacer cookies et traduction HTTP à la périphérie ; vérifier toute la suite et committer.
 - [ ] **Catalogue et assemblage** : tests de consultation publique et expiration ; extraire `ListEvents`, `GetEvent` ; finaliser adaptateurs et composition, retirer les anciens services ; vérifier les imports réels, la compilation et les tests ; committer.
 - [ ] **Livraison** : note de correction avec inventaire, schémas avant/après, coût et limites ; revue indépendante puis corrections éventuelles avec régression rouge/verte ; publier et vérifier l'ascendance GitHub.
 
