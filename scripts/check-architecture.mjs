@@ -1,10 +1,14 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { basename, dirname, relative, resolve, sep } from 'node:path';
 import { createScanner, SyntaxKind } from 'typescript/unstable/ast';
 
 const root = resolve('src');
 const domain = resolve(root, 'domain');
 const application = resolve(root, 'application');
+const queries = resolve(application, 'queries');
+const dto = resolve(application, 'dto');
+const ports = resolve(application, 'ports');
+const readPorts = new Set(['QueryHandler', 'Clock', 'EventReader', 'ReservationReader', 'PaymentAttemptReader', 'UserReader', 'SessionReader']);
 const inside = (file, directory) => file.startsWith(`${directory}${sep}`);
 const files = directory => readdirSync(directory, { withFileTypes: true }).flatMap(entry =>
   entry.isDirectory() ? files(resolve(directory, entry.name))
@@ -28,6 +32,11 @@ for (const file of [...files(domain), ...files(application)]) {
     if (!allowed) {
       const line = source.slice(0, token.start).split('\n').length;
       violations.push(`${relative(process.cwd(), file)}:${line} dépend de ${specifier}`);
+    } else if (inside(file, queries) && !(inside(target, domain) || inside(target, dto) || inside(target, queries)
+      || (inside(target, ports) && readPorts.has(basename(target, '.ts'))))) {
+      violations.push(`${relative(process.cwd(), file)} : une requête dépend de ${specifier}, hors de ses contrats de lecture`);
+    } else if (inside(file, dto) && !(inside(target, domain) || inside(target, dto))) {
+      violations.push(`${relative(process.cwd(), file)} : un DTO dépend d'une orchestration ${specifier}`);
     }
   };
   // Le scanner TypeScript 7 ignore commentaires et chaînes ordinaires ; seules
@@ -56,4 +65,5 @@ if (violations.length) {
   process.exitCode = 1;
 } else {
   console.log(`Architecture vérifiée : ${files(domain).length} fichiers domaine, ${files(application).length} fichiers application, ${imports} imports internes autorisés.`);
+  if (existsSync(queries)) console.log('CQRS vérifié : les requêtes importent uniquement les contrats de lecture, DTO et règles du domaine.');
 }
