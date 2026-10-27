@@ -1,5 +1,7 @@
 # Billetterie — socle du cours d'architecture
 
+Cette branche contient la [correction du TP 2](docs/corrections/tp2.md), ses tests et le diagnostic du N-Layer. La règle d'annulation retourne `409 EVENT_CANCELLED` sans créer de réservation.
+
 Une billetterie fictive, exécutable dès le départ, pour étudier les choix d'architecture à partir d'un cas métier. Le dépôt fournit **un monolithe TypeScript/Node.js en couches**, une interface web, PostgreSQL et un paiement simulé. Les frontières métier et les solutions des ateliers sont à construire et à défendre par les étudiants.
 
 ## Démarrer

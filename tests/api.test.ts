@@ -85,3 +85,32 @@ test('un identifiant de réservation mal formé reçoit une erreur utilisateur',
   assert.equal(checkout.statusCode, 400);
   assert.equal(checkout.json().error.code, 'INVALID_INPUT');
 });
+
+test('un événement annulé est refusé sans réservation ni paiement', async () => {
+  await pool.query(`INSERT INTO events (id, title, venue, starts_at, capacity, status)
+    VALUES ('evenement-annule', 'Annulé', 'Salle test', now(), 10, 'CANCELLED')
+    ON CONFLICT (id) DO UPDATE SET status = 'CANCELLED'`);
+  const response = await app.inject({ method: 'POST', url: '/api/reservations',
+    payload: { eventId: 'evenement-annule', customerRef: 'client-test' } });
+  assert.equal(response.statusCode, 409);
+  assert.equal(response.json().error.code, 'EVENT_CANCELLED');
+  const reservations = await pool.query('SELECT * FROM reservations');
+  const attempts = await pool.query('SELECT * FROM payment_attempts');
+  assert.equal(reservations.rowCount, 0);
+  assert.equal(attempts.rowCount, 0);
+});
+
+test('un événement affiché ouvert puis annulé est revalidé à la réservation', async () => {
+  try {
+    const event = await app.inject({ method: 'GET', url: '/api/events/concert-jazz' });
+    assert.equal(event.json().event.status, 'OPEN');
+    await pool.query("UPDATE events SET status = 'CANCELLED' WHERE id = 'concert-jazz'");
+    const response = await app.inject({ method: 'POST', url: '/api/reservations',
+      payload: { eventId: 'concert-jazz', customerRef: 'client-test' } });
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().error.code, 'EVENT_CANCELLED');
+    assert.equal((await pool.query('SELECT * FROM reservations')).rowCount, 0);
+  } finally {
+    await pool.query("UPDATE events SET status = 'OPEN' WHERE id = 'concert-jazz'");
+  }
+});
