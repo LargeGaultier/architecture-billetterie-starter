@@ -1,5 +1,5 @@
 import { BusinessError } from './BusinessError.js';
-import type { EventView, PaymentScenario, ReservationView } from './models.js';
+import type { EventView, PaymentScenario, PaymentStatus, ReservationView } from './models.js';
 
 export function requireIdentity(userId: string | undefined): string {
   if (!userId?.trim()) throw new BusinessError('AUTH_REQUIRED', 'Connectez-vous pour continuer.');
@@ -37,4 +37,10 @@ export function paymentScenario(value: string): PaymentScenario {
     throw new BusinessError('INVALID_INPUT', 'Scénario de paiement invalide.');
   }
   return value;
+}
+
+export function reservationStatusAfterPayment(result: PaymentStatus): 'CONFIRMED' | 'FAILED' | null {
+  if (result === 'SUCCEEDED') return 'CONFIRMED';
+  if (result === 'FAILED') return 'FAILED';
+  return null;
 }

@@ -1,5 +1,5 @@
 import type { PaymentAttemptView, ReservationView } from '../domain/models.js';
-import { paymentScenario, requireIdentity, requireOwner, requirePayable, validateReservationId } from '../domain/reservationRules.js';
+import { paymentScenario, requireIdentity, requireOwner, requirePayable, reservationStatusAfterPayment, validateReservationId } from '../domain/reservationRules.js';
 import type { IdGenerator, PaymentAttemptStore, PaymentGateway, ReservationStore } from './ports.js';
 
 export class CheckoutReservation {
@@ -20,9 +20,10 @@ export class CheckoutReservation {
     requirePayable(reservation);
     let attempt = await this.attempts.create(this.ids.next(), id, requestedScenario);
     const result = await this.payment.run(requestedScenario);
-    if (result === 'SUCCEEDED' || result === 'FAILED') {
+    const nextStatus = reservationStatusAfterPayment(result);
+    if (nextStatus) {
       attempt = await this.attempts.changeStatus(attempt.id, result);
-      return { reservation: await this.reservations.changeStatus(id, result === 'SUCCEEDED' ? 'CONFIRMED' : 'FAILED'), paymentAttempt: attempt };
+      return { reservation: await this.reservations.changeStatus(id, nextStatus), paymentAttempt: attempt };
     }
     return { reservation, paymentAttempt: attempt };
   }
