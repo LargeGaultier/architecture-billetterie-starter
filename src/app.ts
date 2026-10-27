@@ -4,6 +4,8 @@ import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import type { Pool } from 'pg';
 import { AppError } from './errors.js';
+import { BusinessError } from './domain/BusinessError.js';
+import { businessErrorStatus } from './adapters/http/businessErrors.js';
 import { PaymentSimulator } from './integrations/PaymentSimulator.js';
 import { EventRepository } from './repositories/EventRepository.js';
 import { PaymentAttemptRepository } from './repositories/PaymentAttemptRepository.js';
@@ -34,6 +36,9 @@ export function buildApp(pool: Pool, config: TicketingConfig, authConfig: AuthCo
   );
 
   app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof BusinessError) {
+      return reply.code(businessErrorStatus[error.code]).send({ error: { code: error.code, message: error.message } });
+    }
     if (error instanceof AppError) {
       return reply.code(error.statusCode).send({ error: { code: error.code, message: error.message } });
     }

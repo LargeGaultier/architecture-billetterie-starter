@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { CheckoutReservation } from '../application/CheckoutReservation.js';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { AppError } from '../errors.js';
 import { PaymentSimulator } from '../integrations/PaymentSimulator.js';
@@ -72,25 +73,6 @@ export class TicketingService {
   }
 
   async checkout(id: string, scenario: PaymentScenario, userId: string): Promise<{ reservation: ReservationView; paymentAttempt: PaymentAttemptView }> {
-    await this.ownedReservation(id, userId);
-    if (!['success', 'failure', 'slow'].includes(scenario)) {
-      throw new AppError(400, 'INVALID_INPUT', 'Scénario de paiement invalide.');
-    }
-    await this.reservations.expirePending();
-    const reservation = (await this.reservations.find(id))!;
-    if (reservation.status === 'EXPIRED') throw new AppError(410, 'RESERVATION_EXPIRED', 'La réservation a expiré.');
-    if (reservation.status !== 'PENDING') throw new AppError(409, 'RESERVATION_CLOSED', 'La réservation ne peut plus être payée.');
-
-    let attempt = await this.paymentAttempts.create(randomUUID(), id, scenario);
-    const result = await this.payment.run(scenario);
-    if (result === 'SUCCEEDED') {
-      attempt = await this.paymentAttempts.changeStatus(attempt.id, 'SUCCEEDED');
-      return { reservation: await this.reservations.changeStatus(id, 'CONFIRMED'), paymentAttempt: attempt };
-    }
-    if (result === 'FAILED') {
-      attempt = await this.paymentAttempts.changeStatus(attempt.id, 'FAILED');
-      return { reservation: await this.reservations.changeStatus(id, 'FAILED'), paymentAttempt: attempt };
-    }
-    return { reservation, paymentAttempt: attempt };
+    return new CheckoutReservation(this.reservations, this.paymentAttempts, this.payment, { next: randomUUID }).execute(id, userId, scenario);
   }
 }
