@@ -25,7 +25,10 @@ export function buildHttpApp(application: Application, options: { secureCookies:
   // Adaptation entre les contrats publics : aucune classe interne Identité
   // ni donnée de session n'entre dans le module Billetterie.
   const actors: CurrentActor = {
-    resolve: sessionId => application.identity.queries.getCurrentUser.execute({ sessionId }),
+    resolve: async sessionId => {
+      const user = await application.identity.queries.getCurrentUser.execute({ sessionId });
+      return { id: user.id };
+    },
   };
   registerIdentityRoutes(app, application.identity, options);
   registerTicketingRoutes(app, application.ticketing, actors);
