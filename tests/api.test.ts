@@ -54,6 +54,18 @@ test('un paiement refusé libère la place', async () => {
   assert.equal(second.statusCode, 201);
 });
 
+test('un UUID de réservation majuscule permet toujours de payer et consulter son historique', async () => {
+  const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  await pool.query("INSERT INTO reservations (id,event_id,customer_ref,status,expires_at) VALUES ($1,'festival-lumieres','user-alice','PENDING',now()+interval '15 minutes')", [id]);
+  const paid = await privateRequest({ method: 'POST', url: `/api/reservations/${id.toUpperCase()}/checkout`, payload: { scenario: 'success' } });
+  assert.equal(paid.statusCode, 200);
+  assert.equal(paid.json().reservation.status, 'CONFIRMED');
+  assert.equal(paid.json().paymentAttempt.reservationId, id);
+  const state = await privateRequest({ method: 'GET', url: `/api/reservations/${id.toUpperCase()}` });
+  assert.equal(state.statusCode, 200);
+  assert.equal(state.json().reservation.paymentAttempts.length, 1);
+});
+
 test('une réponse lente conserve un état en attente', async () => {
   const created = await privateRequest({ method: 'POST', url: '/api/reservations', payload: { eventId: 'atelier-une-place', customerRef: 'client-test' } });
   const id = created.json().reservation.id;

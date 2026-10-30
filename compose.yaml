@@ -46,7 +46,7 @@ services:
 
   identity:
     <<: *runtime
-    command: ["sh", "-c", "node dist/migrate.js && node dist/services/identity.js"]
+    command: ["sh", "-c", "node dist/migrate.js && exec node dist/services/identity.js"]
     environment:
       SERVICE_NAME: identity
       DATABASE_URL: postgres://identity:identity_local@identity-db:5432/identity
@@ -58,7 +58,7 @@ services:
 
   ticketing:
     <<: *runtime
-    command: ["sh", "-c", "node dist/migrate.js && node dist/services/ticketing.js"]
+    command: ["sh", "-c", "node dist/migrate.js && exec node dist/services/ticketing.js"]
     environment:
       SERVICE_NAME: ticketing
       DATABASE_URL: postgres://ticketing:ticketing_local@ticketing-db:5432/ticketing
@@ -76,7 +76,7 @@ services:
 
   payments:
     <<: *runtime
-    command: ["sh", "-c", "node dist/migrate.js && node dist/services/payments.js"]
+    command: ["sh", "-c", "node dist/migrate.js && exec node dist/services/payments.js"]
     environment:
       SERVICE_NAME: payments
       DATABASE_URL: postgres://payments:payments_local@payments-db:5432/payments
@@ -92,7 +92,7 @@ services:
     environment:
       IDENTITY_URL: http://identity:3000
       TICKETING_URL: http://ticketing:3000
-      GATEWAY_TIMEOUT_MS: ${GATEWAY_TIMEOUT_MS:-7000}
+      GATEWAY_TIMEOUT_MS: ${GATEWAY_TIMEOUT_MS:-10000}
     ports: ["127.0.0.1:3000:3000"]
     depends_on:
       identity:
@@ -139,7 +139,7 @@ services:
       DATABASE_URL: postgres://ticketing_test:ticketing_test@ticketing-db-test:5432/ticketing_test
       IDENTITY_DATABASE_URL: postgres://identity_test:identity_test@identity-db-test:5432/identity_test
       PAYMENTS_DATABASE_URL: postgres://payments_test:payments_test@payments-db-test:5432/payments_test
-    command: ["sh", "-c", "SERVICE_NAME=identity DATABASE_URL=$$IDENTITY_DATABASE_URL node dist/migrate.js && SERVICE_NAME=ticketing node dist/migrate.js && SERVICE_NAME=payments DATABASE_URL=$$PAYMENTS_DATABASE_URL node dist/migrate.js && npm run check:architecture && npm test"]
+    command: ["sh", "-c", "npm run migrate:test && npm run check:architecture && npm test"]
     depends_on:
       identity-db-test:
         condition: service_healthy

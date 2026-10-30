@@ -30,7 +30,8 @@ test('le contrat Paiement refuse un secret absent/incorrect avant toute commande
 });
 
 for (const returned of [null, { ...attempt, status: 'UNKNOWN' }, { ...attempt, reservationId: '33333333-3333-4333-8333-333333333333' },
-  { ...attempt, scenario: 'failure' }, { ...attempt, createdAt: 'bad' }, { ...attempt, id: 'bad' }]) {
+  { ...attempt, scenario: 'failure' }, { ...attempt, status: ['SUCCEEDED'] }, { ...attempt, scenario: ['success'] },
+  { ...attempt, createdAt: '2027' }, { ...attempt, createdAt: 'bad' }, { ...attempt, id: 'bad' }]) {
   test(`le client refuse un contrat Paiement invalide ou non corrélé : ${JSON.stringify(returned)}`, async () => {
     const app = createHttpApp(async () => {});
     app.post('/internal/payments', async () => ({ paymentAttempt: returned }));
@@ -44,6 +45,25 @@ test('la lecture historique refuse une tentative appartenant à une autre réser
   app.get('/internal/reservations/:id/payments', async () => ({ paymentAttempts: [{ ...attempt, reservationId: '33333333-3333-4333-8333-333333333333' }] }));
   try { await assert.rejects(new PaymentHttpClient(await listen(app), token, 1000).listForReservation(id)); }
   finally { await app.close(); }
+});
+
+test('les UUID majuscules sont canonicalisés dans la demande Paiement et son historique', async () => {
+  const lower = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const app = createHttpApp(async () => {});
+  const result = { ...attempt, reservationId: lower };
+  app.post('/internal/payments', async request => {
+    assert.deepEqual(request.body, { reservationId: lower, scenario: 'success' });
+    return { paymentAttempt: result };
+  });
+  app.get<{ Params: { id: string } }>('/internal/reservations/:id/payments', async request => {
+    assert.equal(request.params.id, lower);
+    return { paymentAttempts: [result] };
+  });
+  try {
+    const client = new PaymentHttpClient(await listen(app), token, 1000);
+    assert.deepEqual(await client.pay(lower.toUpperCase(), 'success'), result);
+    assert.deepEqual(await client.listForReservation(lower.toUpperCase()), [result]);
+  } finally { await app.close(); }
 });
 
 test('le timeout borne un paiement lent et ne le relance pas, même si le serveur finit ensuite', async () => {
@@ -64,6 +84,17 @@ test('le timeout borne un paiement lent et ne le relance pas, même si le serveu
     await new Promise(resolve => setTimeout(resolve, 180));
     assert.equal(calls, 1);
     assert.equal(persisted, true);
+  } finally { await app.close(); }
+});
+
+test('un secret Paiement invalide est une panne technique, pas une déconnexion utilisateur', async () => {
+  const app = buildPaymentsHttpApp({ commands: { processPayment: { async execute() { assert.fail('Interdit'); } } },
+    queries: { listPaymentAttempts: { async execute() { assert.fail('Interdit'); } } } }, token, async () => {});
+  try {
+    await assert.rejects(new PaymentHttpClient(await listen(app), 'incorrect-secret', 1000).pay(id, 'success'), error => {
+      assert.notEqual((error as { code?: string }).code, 'AUTH_REQUIRED');
+      return true;
+    });
   } finally { await app.close(); }
 });
 

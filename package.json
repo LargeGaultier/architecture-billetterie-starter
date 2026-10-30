@@ -14,7 +14,9 @@
     "check:architecture": "node scripts/check-architecture.mjs",
     "test:challenge": "tsx --test tests/concurrency.challenge.ts",
     "load": "node scripts/load.mjs",
-    "test:contracts": "tsx --test tests/contracts/*.test.ts"
+    "test:contracts": "tsx --test tests/contracts/*.test.ts",
+    "migrate:test": "node scripts/migrate-test.mjs",
+    "verify:tp7": "node scripts/verify-tp7.mjs"
   },
   "engines": {
     "node": ">=22"

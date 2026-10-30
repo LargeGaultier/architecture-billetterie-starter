@@ -6,7 +6,7 @@ export function record(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-export async function requestJson(url: string, timeoutMs: number, options: { body?: unknown; cookie?: string; token?: string } = {}): Promise<unknown> {
+export async function requestJson(url: string, timeoutMs: number, options: { body?: unknown; cookie?: string; token?: string; acceptedErrors?: readonly BusinessErrorCode[] } = {}): Promise<unknown> {
   const response = await fetch(url, {
     method: options.body === undefined ? 'GET' : 'POST',
     headers: { ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
@@ -19,7 +19,7 @@ export async function requestJson(url: string, timeoutMs: number, options: { bod
   if (!response.ok) {
     const error = record(record(body).error);
     const code = error.code;
-    if (typeof code === 'string' && Object.hasOwn(businessErrorStatus, code)
+    if (typeof code === 'string' && options.acceptedErrors?.includes(code as BusinessErrorCode) && Object.hasOwn(businessErrorStatus, code)
       && businessErrorStatus[code as BusinessErrorCode] === response.status && typeof error.message === 'string') {
       throw new BusinessError(code as BusinessErrorCode, error.message);
     }
