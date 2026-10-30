@@ -7,7 +7,7 @@ const inside = (file, directory) => file.startsWith(directory + sep);
 const files = directory => !existsSync(directory) ? [] : readdirSync(directory, { withFileTypes: true }).flatMap(entry =>
   entry.isDirectory() ? files(resolve(directory, entry.name)) : entry.name.endsWith('.ts') ? [resolve(directory, entry.name)] : []);
 const readPorts = new Set(['QueryHandler', 'Clock', 'EventReader', 'ReservationReader', 'PaymentAttemptReader', 'UserReader', 'SessionReader']);
-const tableOwner = new Map([['users', 'identity'], ['events', 'ticketing'], ['reservations', 'ticketing'], ['payment_attempts', 'ticketing']]);
+const tableOwner = new Map([['users', 'identity'], ['events', 'ticketing'], ['reservations', 'ticketing'], ['payment_attempts', 'payments']]);
 
 export function analyzeProject(projectRoot) {
   const root = resolve(projectRoot, 'src');
@@ -22,7 +22,7 @@ export function analyzeProject(projectRoot) {
   const violations = [];
   const dependencies = new Map(modules.map(module => [module.name, new Set()]));
   let imports = 0;
-  if (modules.length < 2) violations.push('[MODULES] Au moins deux capacités sont attendues.');
+  if (modules.length !== 3) violations.push('[MODULES] Exactement trois capacités sont attendues.');
 
   for (const file of allFiles) {
     const source = readFileSync(file, 'utf8');
@@ -41,9 +41,11 @@ export function analyzeProject(projectRoot) {
     const check = token => {
       imports++;
       const specifier = token.value;
+      const isGateway = file === resolve(root, 'server.ts') || file === resolve(root, 'adapters/http/buildGatewayApp.ts');
       const core = current && ['domain', 'application', 'contracts'].some(layer => inside(file, resolve(current.root, layer)));
       const sharedCore = inside(file, sharedDomain) || inside(file, sharedApplication);
       if (!specifier.startsWith('.')) {
+        if (isGateway && specifier === 'pg') report('GATEWAY_DB', token, 'la gateway ne possède aucune base');
         if (core || sharedCore) report('CLEAN', token, `dépend de la bibliothèque technique ${specifier}`);
         if (isUnit && !['node:assert/strict', 'node:test'].includes(specifier)) report('UNIT_INFRA', token, `un test en mémoire importe ${specifier}`);
         return;
@@ -51,10 +53,15 @@ export function analyzeProject(projectRoot) {
       const target = resolve(dirname(file), specifier.replace(/\.js$/, '.ts'));
       if (!existsSync(target) || !statSync(target).isFile()) { report('MISSING', token, `cible absente ${specifier}`); return; }
       const destination = owner(target);
+      if (isGateway && destination) report('GATEWAY_MODULE', token, 'la gateway ne charge pas les modules métier');
+      if (inside(file, resolve(root, 'services')) && destination && destination.name !== basename(file, '.ts')) {
+        report('SERVICE_BOOTSTRAP', token, 'un processus ne peut assembler un service étranger');
+      }
       if (inside(file, shared) && !inside(target, shared)) {
         report('SHARED', token, `le partage dépend du métier ${specifier}`); return;
       }
       if (destination && destination !== current) {
+        if (current && !isTest) report('SERVICE_IMPORT', token, 'les services échangent par contrat HTTP, pas par import');
         const publicEntry = target === resolve(destination.root, 'index.ts');
         const setupEntry = target === resolve(destination.root, 'setup.ts') && file === resolve(root, 'migrate.ts');
         const testEntry = target === resolve(destination.root, 'testing.ts') && file === resolve(root, 'integrations/PaymentSimulator.ts');

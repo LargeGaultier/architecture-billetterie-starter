@@ -1,18 +1,14 @@
-import { readFile, readdir } from 'node:fs/promises';
-import { join } from 'node:path';
 import { Pool } from 'pg';
-import { seedUsers } from './modules/identity/setup.js';
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+import { migrateIdentity } from './modules/identity/setup.js';
+import { migrateTicketing } from './modules/ticketing/setup.js';
+import { migratePayments } from './modules/payments/setup.js';
+import { requiredEnv } from './shared/adapters/system/environment.js';
+const service = requiredEnv('SERVICE_NAME');
+if (!['identity', 'ticketing', 'payments'].includes(service)) throw new Error('SERVICE_NAME invalide.');
+const pool = new Pool({ connectionString: requiredEnv('DATABASE_URL') });
 try {
-  const directory = join(process.cwd(), 'db', 'migrations');
-  for (const file of (await readdir(directory)).filter(file => file.endsWith('.sql')).sort()) {
-    await pool.query(await readFile(join(directory, file), 'utf8'));
-  }
-  const seed = await readFile(join(process.cwd(), 'db', 'seeds', '001_demo.sql'), 'utf8');
-  await pool.query(seed);
-  await seedUsers(pool);
-  console.log('Migrations et données fictives prêtes.');
-} finally {
-  await pool.end();
-}
+  if (service === 'identity') await migrateIdentity(pool);
+  else if (service === 'ticketing') await migrateTicketing(pool);
+  else await migratePayments(pool);
+  console.log('Données privées prêtes : ' + service);
+} finally { await pool.end(); }

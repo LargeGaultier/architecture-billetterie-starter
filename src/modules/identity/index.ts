@@ -6,3 +6,4 @@ export type { UserAccount } from './domain/models/UserAccount.js';
 export type { Session } from './domain/models/Session.js';
 export { createIdentityModule } from './bootstrap/createIdentityModule.js';
 export { registerIdentityRoutes } from './adapters/http/registerIdentityRoutes.js';
+export { buildIdentityHttpApp } from './adapters/http/buildIdentityHttpApp.js';

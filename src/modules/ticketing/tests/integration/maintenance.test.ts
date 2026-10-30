@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, beforeEach, test } from 'node:test';
 import { Pool } from 'pg';
-import { buildApp } from '../../../../app.js';
+import { buildApp, resetData, paymentPool } from '../../../../../tests/helpers/system.js';
 import { ReservationRepository } from '../../adapters/postgres/ReservationRepository.js';
 import { ExpirePendingReservationsHandler } from '../../application/commands/ExpirePendingReservations.js';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const app = buildApp(pool, { reservationTtlMinutes: 15, paymentSlowMs: 1, reservationHoldMs: 0 });
-beforeEach(async () => { await pool.query('TRUNCATE payment_attempts, reservations'); });
+beforeEach(async () => { await resetData(pool); });
 after(async () => { await app.close(); await pool.end(); });
 
 test('la commande de maintenance expire seulement les PENDING arrivées à échéance dans PostgreSQL', async () => {
@@ -30,7 +30,7 @@ test('la commande de maintenance expire seulement les PENDING arrivées à éch�
   assert.deepEqual(Object.fromEntries(rows.rows.map(row => [row.id, row.status])), {
     [expiredPending]: 'EXPIRED', [validPending]: 'PENDING', [confirmed]: 'CONFIRMED', [failed]: 'FAILED', [expired]: 'EXPIRED',
   });
-  assert.equal((await pool.query('SELECT * FROM payment_attempts')).rowCount, 0);
+  assert.equal((await paymentPool.query('SELECT * FROM payment_attempts')).rowCount, 0);
 });
 
 for (const route of ['/api/events', '/api/events/festival-lumieres']) {

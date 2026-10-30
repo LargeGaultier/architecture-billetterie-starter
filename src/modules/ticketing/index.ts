@@ -10,3 +10,6 @@ export type { PaymentStatus } from './domain/models/PaymentStatus.js';
 export type { PaymentScenario } from './domain/models/PaymentScenario.js';
 export { createTicketingModule } from './bootstrap/createTicketingModule.js';
 export { registerTicketingRoutes } from './adapters/http/registerTicketingRoutes.js';
+export { buildTicketingHttpApp } from './adapters/http/buildTicketingHttpApp.js';
+export { PaymentHttpClient } from './adapters/http/PaymentHttpClient.js';
+export { createSessionActor } from './adapters/http/createSessionActor.js';

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { Pool } from 'pg';
-import { buildApp } from '../src/app.js';
+import { buildApp, resetData, identityPool, paymentPool } from './helpers/system.js';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const app = buildApp(pool, { reservationTtlMinutes: 15, paymentSlowMs: 1, reservationHoldMs: 120 });
 before(async () => {
   await app.ready();
-  await pool.query('TRUNCATE payment_attempts, reservations');
+  await resetData(pool);
 });
 after(async () => { await app.close(); await pool.end(); });
 

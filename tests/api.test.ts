@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { Pool } from 'pg';
-import { buildApp } from '../src/app.js';
+import { buildApp, resetData, identityPool, paymentPool } from './helpers/system.js';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const app = buildApp(pool, { reservationTtlMinutes: 15, paymentSlowMs: 1, reservationHoldMs: 0 });
@@ -12,7 +12,7 @@ async function privateRequest(options: { method: 'POST' | 'GET'; url: string; pa
   return app.inject({ ...options, headers: { cookie: aliceCookie } });
 }
 beforeEach(async () => {
-  await pool.query('TRUNCATE payment_attempts, reservations');
+  await resetData(pool);
   const login = await app.inject({ method: 'POST', url: '/api/auth/login',
     payload: { login: 'alice', password: 'Alice-demo-2027!' } });
   assert.equal(login.statusCode, 200);
@@ -105,7 +105,7 @@ test('un événement annulé est refusé sans réservation ni paiement', async (
   assert.equal(response.statusCode, 409);
   assert.equal(response.json().error.code, 'EVENT_CANCELLED');
   const reservations = await pool.query('SELECT * FROM reservations');
-  const attempts = await pool.query('SELECT * FROM payment_attempts');
+  const attempts = await paymentPool.query('SELECT * FROM payment_attempts');
   assert.equal(reservations.rowCount, 0);
   assert.equal(attempts.rowCount, 0);
 });

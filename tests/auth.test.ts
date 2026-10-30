@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { Pool } from 'pg';
-import { buildApp } from '../src/app.js';
+import { buildApp, resetData, identityPool, paymentPool } from './helpers/system.js';
 import { PaymentSimulator } from '../src/integrations/PaymentSimulator.js';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -11,7 +11,7 @@ const app = buildApp(pool, config, { now: () => now, sessionTtlMs: 30 * 60_000 }
 before(async () => { await app.ready(); });
 beforeEach(async () => {
   now = Date.now();
-  await pool.query('TRUNCATE payment_attempts, reservations');
+  await resetData(pool);
 });
 after(async () => { await app.close(); await pool.end(); });
 
@@ -34,7 +34,7 @@ async function reserve(cookie: string) {
 async function snapshot() {
   return {
     reservations: (await pool.query('SELECT * FROM reservations ORDER BY id')).rows,
-    attempts: (await pool.query('SELECT * FROM payment_attempts ORDER BY id')).rows,
+    attempts: (await paymentPool.query('SELECT * FROM payment_attempts ORDER BY id')).rows,
   };
 }
 
@@ -166,7 +166,7 @@ test('la déconnexion invalide côté serveur, efface le cookie et préserve les
 });
 
 test('les deux comptes persistés ont des hashes salés distincts, jamais leurs mots de passe', async () => {
-  const users = await pool.query('SELECT id, login, password_hash FROM users ORDER BY login');
+  const users = await identityPool.query('SELECT id, login, password_hash FROM users ORDER BY login');
   assert.equal(users.rowCount, 2);
   for (const user of users.rows) {
     assert.match(user.password_hash, /^scrypt\$[0-9a-f]{32}\$[0-9a-f]{128}$/);

@@ -11,6 +11,7 @@ function analyzeFixture(files: Record<string, string>) {
   try {
     mkdirSync(resolve(root, 'src/modules/identity'), { recursive: true });
     mkdirSync(resolve(root, 'src/modules/ticketing'), { recursive: true });
+    mkdirSync(resolve(root, 'src/modules/payments'), { recursive: true });
     for (const [path, source] of Object.entries(files)) {
       const target = resolve(root, path);
       assert.ok(target.startsWith(root + sep));
@@ -86,6 +87,37 @@ test('les requetes SQL sur les tables propres au module restent autorisees', () 
   const result = analyzeFixture({
     'src/modules/identity/adapters/postgres/Users.ts': "const sql = 'SELECT id FROM users';",
     'src/modules/ticketing/adapters/postgres/Events.ts': 'const sql = `SELECT * FROM events e JOIN reservations r ON r.event_id=e.id`;',
+    'src/modules/payments/adapters/postgres/Attempts.ts': "const sql = 'SELECT * FROM payment_attempts';",
   });
   assert.deepEqual(result.violations, []);
+});
+
+test('un service ne peut importer directement même l API publique d un autre service', () => {
+  const result = analyzeFixture({
+    'src/modules/identity/index.ts': 'export interface IdentityApi {}',
+    'src/modules/ticketing/adapters/Bad.ts': "import type { IdentityApi } from '../../identity/index.js';",
+  });
+  assert.ok(result.violations.some((value: string) => value.includes('[SERVICE_IMPORT]')));
+});
+
+test('la billetterie ne peut accéder directement aux tentatives Paiement', () => {
+  const result = analyzeFixture({ 'src/modules/ticketing/adapters/postgres/Bad.ts': "const sql = 'SELECT * FROM payment_attempts';" });
+  assert.ok(result.violations.some((value: string) => value.includes('[DATA_OWNER]')));
+});
+
+test('la gateway ne peut importer pg ni assembler un module métier', () => {
+  const result = analyzeFixture({
+    'src/modules/identity/index.ts': 'export const identity = true;',
+    'src/adapters/http/buildGatewayApp.ts': "import { Pool } from 'pg'; import { identity } from '../../modules/identity/index.js';",
+  });
+  assert.ok(result.violations.some((value: string) => value.includes('[GATEWAY_DB]')));
+  assert.ok(result.violations.some((value: string) => value.includes('[GATEWAY_MODULE]')));
+});
+
+test('le processus Identité ne peut assembler le module Billetterie', () => {
+  const result = analyzeFixture({
+    'src/modules/ticketing/index.ts': 'export const ticketing = true;',
+    'src/services/identity.ts': "import { ticketing } from '../modules/ticketing/index.js';",
+  });
+  assert.ok(result.violations.some((value: string) => value.includes('[SERVICE_BOOTSTRAP]')));
 });
