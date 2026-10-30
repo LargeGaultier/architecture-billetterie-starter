@@ -2,9 +2,7 @@ import type { PaymentAttempt } from '../../domain/models/PaymentAttempt.js';
 import type { Reservation } from '../../domain/models/Reservation.js';
 import { paymentScenario, requireIdentity, requireOwner, requirePayable, reservationStatusAfterPayment, validateReservationId } from '../../domain/reservationRules.js';
 import type { CommandHandler } from '../../../../shared/application/ports/CommandHandler.js';
-import type { IdGenerator } from '../../../../shared/application/ports/IdGenerator.js';
-import type { PaymentAttemptStore } from '../ports/PaymentAttemptStore.js';
-import type { PaymentGateway } from '../ports/PaymentGateway.js';
+import type { PaymentProcessor } from '../ports/PaymentProcessor.js';
 import type { ReservationStore } from '../ports/ReservationStore.js';
 import type { ExpirePendingReservationsCommand } from './ExpirePendingReservations.js';
 
@@ -14,9 +12,7 @@ export interface CheckoutReservationResult { reservation: Reservation; paymentAt
 export class CheckoutReservationHandler implements CommandHandler<CheckoutReservationCommand, CheckoutReservationResult> {
   constructor(
     private readonly reservations: ReservationStore,
-    private readonly attempts: PaymentAttemptStore,
-    private readonly payment: PaymentGateway,
-    private readonly ids: IdGenerator,
+    private readonly payment: PaymentProcessor,
     private readonly expiration: CommandHandler<ExpirePendingReservationsCommand, void>,
   ) {}
 
@@ -28,11 +24,9 @@ export class CheckoutReservationHandler implements CommandHandler<CheckoutReserv
     await this.expiration.execute({});
     const reservation = (await this.reservations.find(command.reservationId))!;
     requirePayable(reservation);
-    let attempt = await this.attempts.create(this.ids.next(), command.reservationId, requestedScenario);
-    const result = await this.payment.run(requestedScenario);
-    const nextStatus = reservationStatusAfterPayment(result);
+    const attempt = await this.payment.pay(command.reservationId, requestedScenario);
+    const nextStatus = reservationStatusAfterPayment(attempt.status);
     if (nextStatus) {
-      attempt = await this.attempts.changeStatus(attempt.id, result);
       return { reservation: await this.reservations.changeStatus(command.reservationId, nextStatus), paymentAttempt: attempt };
     }
     return { reservation, paymentAttempt: attempt };

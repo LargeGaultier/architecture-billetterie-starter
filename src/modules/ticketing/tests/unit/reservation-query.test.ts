@@ -31,7 +31,7 @@ test('le DTO privé copie la réservation et filtre les détails internes des te
 test('le checkout revalide une réservation devenue expirée après la lecture', async () => {
   const f = ticketingFixture();
   const query = new GetMyReservationHandler(f.reservations, f.attempts);
-  const checkout = new CheckoutReservationHandler(f.reservations, f.attempts, f.payment, f.ids, f.expiration);
+  const checkout = new CheckoutReservationHandler(f.reservations, f.processor, f.expiration);
   const shown = await query.execute({ reservationId: reservationId, actorId: 'alice' });
   assert.equal(shown.status, 'PENDING');
   f.setNow(Date.parse(shown.expiresAt));

@@ -5,7 +5,7 @@ import { reservationId, ticketingFixture } from './ticketing-fixture.js';
 
 function fixture() {
   const f = ticketingFixture();
-  return { ...f, checkout: new CheckoutReservationHandler(f.reservations, f.attempts, f.payment, f.ids, f.expiration) };
+  return { ...f, checkout: new CheckoutReservationHandler(f.reservations, f.processor, f.expiration) };
 }
 
 test('checkout sans identité : AUTH_REQUIRED avant toute lecture ou effet', async () => {
